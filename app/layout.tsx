@@ -1,14 +1,13 @@
 import type { Metadata, Viewport } from "next";
 import { Inter } from "next/font/google";
 import { Toaster } from "react-hot-toast";
-import { FetchSanitizer } from "@/components/FetchSanitizer";
 import "./globals.css";
 
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "世界盃友情投注",
-  description: "朋友之間的世界盃投注記錄平台",
+  title: "世界盃燈神爭霸戰",
+  description: "少賭宜情 大賭變李嘉誠",
   manifest: "/manifest.json",
 };
 
@@ -27,7 +26,6 @@ export default function RootLayout({
   return (
     <html lang="zh-Hant-HK" className="dark" suppressHydrationWarning>
       <body className={inter.className}>
-        <FetchSanitizer />
         {children}
         <Toaster
           position="top-center"
