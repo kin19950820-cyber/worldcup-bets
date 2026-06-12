@@ -19,7 +19,7 @@ export async function createClient() {
               cookieStore.set(name, value, options)
             );
           } catch {
-            // Called from Server Component — cookies are read-only; middleware handles refresh
+            // Server Component context — session refresh handled by proxy.ts
           }
         },
       },
@@ -27,7 +27,7 @@ export async function createClient() {
   );
 }
 
-// Service role client bypasses RLS — only use in trusted server contexts
+// Bypasses RLS — only use in trusted server actions with admin checks
 export function createServiceClient() {
   return createSupabaseClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,

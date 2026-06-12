@@ -3,8 +3,8 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn, formatCurrency } from "@/lib/utils";
-import { signOut } from "@/lib/actions/auth";
-import { useState, useTransition } from "react";
+import { createClient } from "@/lib/supabase/client";
+import { useState } from "react";
 
 interface NavbarProps {
   displayName: string;
@@ -27,13 +27,14 @@ const adminItems = [
 
 export default function Navbar({ displayName, role, balance }: NavbarProps) {
   const pathname = usePathname();
-  const [isPending, startTransition] = useTransition();
+  const [isPending, setIsPending] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
 
-  const handleLogout = () => {
-    startTransition(async () => {
-      await signOut();
-    });
+  const handleLogout = async () => {
+    setIsPending(true);
+    const supabase = createClient();
+    await supabase.auth.signOut();
+    window.location.href = "/login";
   };
 
   const isAdmin = role === "admin";

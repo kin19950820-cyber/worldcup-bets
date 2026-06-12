@@ -20,7 +20,8 @@ export async function signIn(formData: FormData) {
   }
 
   revalidatePath("/", "layout");
-  redirect("/dashboard");
+  // Return success — let client router navigate so cookies are flushed first
+  return { success: true };
 }
 
 export async function signUp(formData: FormData) {
@@ -47,7 +48,7 @@ export async function signUp(formData: FormData) {
   }
 
   revalidatePath("/", "layout");
-  redirect("/dashboard");
+  return { success: true };
 }
 
 export async function signOut() {
