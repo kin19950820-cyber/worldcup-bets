@@ -1,7 +1,13 @@
 "use client";
 
 import { useState } from "react";
-import { formatCurrency, formatHKTime, getStatusLabel, cn } from "@/lib/utils";
+import {
+  formatCurrency,
+  formatHKTime,
+  getSettlementStatus,
+  getStatusLabel,
+  cn,
+} from "@/lib/utils";
 import { BET_TYPES } from "@/lib/types";
 
 type BetRow = {
@@ -32,7 +38,9 @@ interface Props {
 const STATUS_COLORS: Record<string, string> = {
   pending: "bg-yellow-500/20 text-yellow-400",
   won: "bg-emerald-500/20 text-emerald-400",
+  half_won: "bg-lime-500/20 text-lime-400",
   lost: "bg-red-500/20 text-red-400",
+  half_lost: "bg-orange-500/20 text-orange-400",
   void: "bg-slate-500/20 text-slate-400",
 };
 
@@ -43,12 +51,19 @@ export default function PublicBetsTable({ initialBets, matches, players }: Props
   const [filterType, setFilterType] = useState("all");
 
   const filtered = initialBets.filter((b) => {
+    const displayStatus = getSettlementStatus(
+      b.status,
+      b.payout,
+      b.stake,
+      b.odds
+    );
+
     if (filterMatch !== "all") {
       const match = matches.find((m) => `${m.home_team} vs ${m.away_team}` === filterMatch);
       if (match && b.matches?.home_team !== match.home_team) return false;
     }
     if (filterPlayer !== "all" && b.profiles?.display_name !== filterPlayer) return false;
-    if (filterStatus !== "all" && b.status !== filterStatus) return false;
+    if (filterStatus !== "all" && displayStatus !== filterStatus) return false;
     if (filterType !== "all" && b.bet_type !== filterType) return false;
     return true;
   });
@@ -65,8 +80,10 @@ export default function PublicBetsTable({ initialBets, matches, players }: Props
           <option value="all">全部狀態</option>
           <option value="pending">待結算</option>
           <option value="won">贏</option>
+          <option value="half_won">贏半</option>
           <option value="lost">輸</option>
-          <option value="void">取消</option>
+          <option value="half_lost">輸半</option>
+          <option value="void">走盤</option>
         </select>
 
         <select
@@ -114,7 +131,15 @@ export default function PublicBetsTable({ initialBets, matches, players }: Props
         </div>
       ) : (
         <div className="space-y-2">
-          {filtered.map((bet) => (
+          {filtered.map((bet) => {
+            const displayStatus = getSettlementStatus(
+              bet.status,
+              bet.payout,
+              bet.stake,
+              bet.odds
+            );
+
+            return (
             <div key={bet.id} className="card p-4">
               {/* Header row */}
               <div className="flex items-start justify-between gap-2 mb-2">
@@ -136,10 +161,10 @@ export default function PublicBetsTable({ initialBets, matches, players }: Props
                 <span
                   className={cn(
                     "text-xs px-2 py-0.5 rounded-full font-medium shrink-0",
-                    STATUS_COLORS[bet.status] ?? STATUS_COLORS.pending
+                    STATUS_COLORS[displayStatus] ?? STATUS_COLORS.pending
                   )}
                 >
-                  {getStatusLabel(bet.status)}
+                  {getStatusLabel(displayStatus)}
                 </span>
               </div>
 
@@ -161,7 +186,7 @@ export default function PublicBetsTable({ initialBets, matches, players }: Props
                     {formatCurrency(bet.possible_return)}
                   </span>
                 </div>
-                {bet.status === "won" && (
+                {["won", "half_won", "half_lost", "void"].includes(displayStatus) && (
                   <div>
                     <span className="text-slate-500">實得 </span>
                     <span className="text-emerald-400 font-medium">
@@ -174,7 +199,8 @@ export default function PublicBetsTable({ initialBets, matches, players }: Props
                 </div>
               </div>
             </div>
-          ))}
+            );
+          })}
         </div>
       )}
     </div>

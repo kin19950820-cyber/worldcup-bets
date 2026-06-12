@@ -1,9 +1,16 @@
 import { redirect } from "next/navigation";
 import { getDashboardData } from "@/lib/actions/dashboard";
-import { formatCurrency, formatProfitLoss, formatHKTime, getStatusLabel } from "@/lib/utils";
+import {
+  formatCurrency,
+  formatProfitLoss,
+  formatHKTime,
+  getSettlementStatus,
+  getStatusLabel,
+} from "@/lib/utils";
 import { cn } from "@/lib/utils";
 import Link from "next/link";
 import MatchCountdown from "@/components/matches/MatchCountdown";
+import LoanCard from "@/components/loans/LoanCard";
 
 export const dynamic = "force-dynamic";
 
@@ -11,8 +18,16 @@ export default async function DashboardPage() {
   const data = await getDashboardData();
   if (!data || !data.profile) redirect("/login");
 
-  const { profile, pending_stake, possible_return, recent_bets, upcoming_matches } = data;
-  const profit = profile.current_balance - profile.starting_fund;
+  const {
+    profile,
+    pending_stake,
+    possible_return,
+    total_borrowed,
+    recent_bets,
+    upcoming_matches,
+  } = data;
+  const profit =
+    profile.current_balance - profile.starting_fund - total_borrowed;
 
   return (
     <div className="max-w-lg mx-auto px-4 py-6 space-y-6">
@@ -29,6 +44,8 @@ export default async function DashboardPage() {
           {formatProfitLoss(profit)} 盈虧
         </div>
       </div>
+
+      <LoanCard totalBorrowed={total_borrowed} />
 
       {/* Stats Row */}
       <div className="grid grid-cols-2 gap-3">
@@ -104,7 +121,14 @@ export default async function DashboardPage() {
                     </p>
                   </div>
                   <div className="text-right ml-3 shrink-0">
-                    <StatusBadge status={bet.status} />
+                    <StatusBadge
+                      status={getSettlementStatus(
+                        bet.status,
+                        bet.payout,
+                        bet.stake,
+                        bet.odds
+                      )}
+                    />
                     <p className="text-xs text-slate-500 mt-1">{formatCurrency(bet.stake)}</p>
                   </div>
                 </div>
@@ -129,7 +153,9 @@ function StatusBadge({ status }: { status: string }) {
   const map: Record<string, string> = {
     pending: "bg-yellow-500/20 text-yellow-400",
     won: "bg-emerald-500/20 text-emerald-400",
+    half_won: "bg-lime-500/20 text-lime-400",
     lost: "bg-red-500/20 text-red-400",
+    half_lost: "bg-orange-500/20 text-orange-400",
     void: "bg-slate-500/20 text-slate-400",
   };
   return (

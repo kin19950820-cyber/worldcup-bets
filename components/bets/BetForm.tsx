@@ -85,6 +85,9 @@ export default function BetForm({ matches, currentBalance }: BetFormProps) {
             </option>
           ))}
         </select>
+        <p className="text-xs text-slate-500 mt-1">
+          讓球請在投注選項填寫球隊及盤口，例如：香港 +0.25
+        </p>
       </div>
 
       {/* Bet type */}

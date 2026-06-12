@@ -23,6 +23,7 @@ export type Match = {
 };
 
 export type BetType =
+  | "讓球"
   | "主客和"
   | "讓球主客和"
   | "入球大細"
@@ -32,6 +33,7 @@ export type BetType =
   | "其他";
 
 export const BET_TYPES: BetType[] = [
+  "讓球",
   "主客和",
   "讓球主客和",
   "入球大細",
@@ -41,7 +43,13 @@ export const BET_TYPES: BetType[] = [
   "其他",
 ];
 
-export type BetStatus = "pending" | "won" | "lost" | "void";
+export type BetStatus =
+  | "pending"
+  | "won"
+  | "half_won"
+  | "lost"
+  | "half_lost"
+  | "void";
 
 export type Bet = {
   id: string;
@@ -64,7 +72,13 @@ export type Transaction = {
   id: string;
   user_id: string;
   bet_id: string | null;
-  type: "initial_fund" | "stake_deduct" | "payout" | "refund" | "adjustment";
+  type:
+    | "initial_fund"
+    | "stake_deduct"
+    | "payout"
+    | "refund"
+    | "adjustment"
+    | "loan";
   amount: number;
   balance_after: number;
   created_at: string;
@@ -74,6 +88,8 @@ export type LeaderboardEntry = {
   id: string;
   display_name: string;
   current_balance: number;
+  net_balance: number;
+  total_borrowed: number;
   starting_fund: number;
   profit_loss: number;
   total_won: number;

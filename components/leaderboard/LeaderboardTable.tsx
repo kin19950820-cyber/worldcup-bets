@@ -55,10 +55,15 @@ export default function LeaderboardTable({ entries }: { entries: LeaderboardEntr
               </div>
             </div>
             <div className="text-right shrink-0">
-              <p className="font-bold text-white">{formatCurrency(e.current_balance)}</p>
+              <p className="font-bold text-white">{formatCurrency(e.net_balance)}</p>
               <p className={cn("text-xs font-semibold", e.profit_loss >= 0 ? "profit-positive" : "profit-negative")}>
                 {formatProfitLoss(e.profit_loss)}
               </p>
+              {e.total_borrowed > 0 && (
+                <p className="text-xs text-orange-400 mt-0.5">
+                  現金 {formatCurrency(e.current_balance)} · 借款 {formatCurrency(e.total_borrowed)}
+                </p>
+              )}
             </div>
           </div>
 
@@ -66,7 +71,14 @@ export default function LeaderboardTable({ entries }: { entries: LeaderboardEntr
           <div className="hidden md:grid grid-cols-7 items-center">
             <span className="text-xl">{MEDALS[i] ?? `#${i + 1}`}</span>
             <span className="col-span-2 font-semibold text-white">{e.display_name}</span>
-            <span className="text-right font-bold text-white">{formatCurrency(e.current_balance)}</span>
+            <span className="text-right">
+              <span className="block font-bold text-white">{formatCurrency(e.net_balance)}</span>
+              {e.total_borrowed > 0 && (
+                <span className="block text-xs text-orange-400">
+                  借 {formatCurrency(e.total_borrowed)}
+                </span>
+              )}
+            </span>
             <span className={cn("text-right font-semibold text-sm", e.profit_loss >= 0 ? "profit-positive" : "profit-negative")}>
               {formatProfitLoss(e.profit_loss)}
             </span>

@@ -5,8 +5,26 @@ import { settleBet } from "@/lib/actions/settle";
 import { formatCurrency, formatHKTime, cn } from "@/lib/utils";
 import toast from "react-hot-toast";
 import dynamic from "next/dynamic";
+import type { BetStatus } from "@/lib/types";
 
 const Confetti = dynamic(() => import("@/components/ui/Confetti"), { ssr: false });
+type SettlementResult = Exclude<BetStatus, "pending">;
+
+const SETTLEMENT_OPTIONS: Array<{
+  result: SettlementResult;
+  label: string;
+  className: string;
+}> = [
+  { result: "won", label: "贏", className: "bg-emerald-600 hover:bg-emerald-700" },
+  { result: "half_won", label: "贏半", className: "bg-lime-600 hover:bg-lime-700" },
+  { result: "lost", label: "輸", className: "bg-red-600 hover:bg-red-700" },
+  { result: "half_lost", label: "輸半", className: "bg-orange-600 hover:bg-orange-700" },
+  { result: "void", label: "走盤", className: "bg-slate-600 hover:bg-slate-500" },
+];
+
+const SETTLEMENT_LABELS = Object.fromEntries(
+  SETTLEMENT_OPTIONS.map(({ result, label }) => [result, label])
+) as Record<SettlementResult, string>;
 
 type BetRow = {
   id: string;
@@ -35,12 +53,12 @@ export default function SettlePanel({ initialBets }: Props) {
   const [bets, setBets] = useState<BetRow[]>(initialBets);
   const [pending, startTransition] = useTransition();
   const [confirmId, setConfirmId] = useState<string | null>(null);
-  const [confirmResult, setConfirmResult] = useState<"won" | "lost" | "void" | null>(null);
+  const [confirmResult, setConfirmResult] = useState<SettlementResult | null>(null);
   const [showConfetti, setShowConfetti] = useState(false);
 
   const pendingBets = bets.filter((b) => b.status === "pending");
 
-  const handleSettle = (betId: string, result: "won" | "lost" | "void") => {
+  const handleSettle = (betId: string, result: SettlementResult) => {
     startTransition(async () => {
       const res = await settleBet(betId, result);
 
@@ -61,21 +79,21 @@ export default function SettlePanel({ initialBets }: Props) {
       setConfirmId(null);
       setConfirmResult(null);
 
-      if (result === "won") {
+      if (result === "won" || result === "half_won") {
         setShowConfetti(true);
         setTimeout(() => setShowConfetti(false), 5000);
         toast.success(
-          `🎉 恭喜！${res.playerName} 贏咗 ${formatCurrency(res.payout ?? 0)}，目前結餘 ${formatCurrency(res.newBalance ?? 0)}`,
-          { duration: 6000, icon: "🏆" }
+          `${res.playerName} ${SETTLEMENT_LABELS[result]}，派彩 ${formatCurrency(res.payout ?? 0)}，目前結餘 ${formatCurrency(res.newBalance ?? 0)}`,
+          { duration: 6000 }
         );
       } else if (result === "lost") {
         toast.error(
-          `😢 ${res.playerName} 輸咗，扣除本金 ${formatCurrency(res.stake ?? 0)}，目前結餘 ${formatCurrency(res.newBalance ?? 0)}`,
+          `${res.playerName} 輸，損失本金 ${formatCurrency(res.stake ?? 0)}，目前結餘 ${formatCurrency(res.newBalance ?? 0)}`,
           { duration: 5000 }
         );
       } else {
         toast(
-          `↩️ 投注取消，${res.playerName} 退回本金 ${formatCurrency(res.stake ?? 0)}`,
+          `${res.playerName} ${SETTLEMENT_LABELS[result]}，退回 ${formatCurrency(res.payout ?? 0)}，目前結餘 ${formatCurrency(res.newBalance ?? 0)}`,
           { duration: 5000 }
         );
       }
@@ -161,12 +179,16 @@ export default function SettlePanel({ initialBets }: Props) {
                       "font-bold",
                       confirmResult === "won"
                         ? "text-emerald-400"
+                        : confirmResult === "half_won"
+                        ? "text-lime-400"
                         : confirmResult === "lost"
                         ? "text-red-400"
+                        : confirmResult === "half_lost"
+                        ? "text-orange-400"
                         : "text-slate-400"
                     )}
                   >
-                    {confirmResult === "won" ? "贏" : confirmResult === "lost" ? "輸" : "取消"}
+                    {confirmResult ? SETTLEMENT_LABELS[confirmResult] : ""}
                   </span>
                   ？
                 </p>
@@ -187,28 +209,23 @@ export default function SettlePanel({ initialBets }: Props) {
                 </div>
               </div>
             ) : (
-              <div className="flex gap-2">
-                <button
-                  onClick={() => { setConfirmId(bet.id); setConfirmResult("won"); }}
-                  disabled={pending}
-                  className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl py-2 text-sm font-semibold transition-colors"
-                >
-                  🏆 贏
-                </button>
-                <button
-                  onClick={() => { setConfirmId(bet.id); setConfirmResult("lost"); }}
-                  disabled={pending}
-                  className="flex-1 bg-red-600 hover:bg-red-700 text-white rounded-xl py-2 text-sm font-semibold transition-colors"
-                >
-                  ❌ 輸
-                </button>
-                <button
-                  onClick={() => { setConfirmId(bet.id); setConfirmResult("void"); }}
-                  disabled={pending}
-                  className="flex-1 bg-slate-600 hover:bg-slate-500 text-white rounded-xl py-2 text-sm font-semibold transition-colors"
-                >
-                  ↩️ 取消
-                </button>
+              <div className="grid grid-cols-3 gap-2">
+                {SETTLEMENT_OPTIONS.map((option) => (
+                  <button
+                    key={option.result}
+                    onClick={() => {
+                      setConfirmId(bet.id);
+                      setConfirmResult(option.result);
+                    }}
+                    disabled={pending}
+                    className={cn(
+                      "text-white rounded-xl py-2 text-sm font-semibold transition-colors",
+                      option.className
+                    )}
+                  >
+                    {option.label}
+                  </button>
+                ))}
               </div>
             )}
           </div>
