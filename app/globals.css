@@ -1,0 +1,56 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    color-scheme: dark;
+  }
+
+  html {
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  body {
+    @apply bg-slate-950 text-slate-100 antialiased;
+    min-height: 100dvh;
+  }
+
+  * {
+    @apply border-slate-800;
+  }
+}
+
+@layer components {
+  .card {
+    @apply bg-slate-900 border border-slate-800 rounded-2xl;
+  }
+
+  .btn-primary {
+    @apply bg-brand-500 hover:bg-brand-600 active:bg-brand-700 text-white font-semibold rounded-xl px-4 py-2.5 transition-colors disabled:opacity-50 disabled:cursor-not-allowed;
+  }
+
+  .btn-secondary {
+    @apply bg-slate-800 hover:bg-slate-700 active:bg-slate-600 text-slate-100 font-semibold rounded-xl px-4 py-2.5 transition-colors;
+  }
+
+  .btn-danger {
+    @apply bg-red-600 hover:bg-red-700 active:bg-red-800 text-white font-semibold rounded-xl px-4 py-2.5 transition-colors disabled:opacity-50;
+  }
+
+  .form-input {
+    @apply w-full bg-slate-800 border border-slate-700 text-slate-100 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent placeholder:text-slate-500 transition-all;
+  }
+
+  .form-label {
+    @apply block text-sm font-medium text-slate-300 mb-1.5;
+  }
+
+  .profit-positive {
+    @apply text-emerald-400;
+  }
+
+  .profit-negative {
+    @apply text-red-400;
+  }
+}
