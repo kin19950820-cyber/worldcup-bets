@@ -82,6 +82,39 @@ const TEAM_ALIASES: Record<string, string[]> = {
   Turkey: ["Türkiye"],
 };
 
+const SPREAD_MARKET_TYPES = new Set([
+  "spread",
+  "handicap",
+  "spreads",
+  "match_handicap",
+  "first_half_spreads",
+]);
+
+const LINE_MARKET_TYPES = new Set([
+  "total",
+  "totals",
+  "total_goals",
+  "team_total",
+  "team_totals",
+  "game_team_totals",
+  "soccer_home_team_totals",
+  "soccer_away_team_totals",
+  "soccer_team_totals",
+  "first_half_totals",
+  "second_half_totals",
+  "soccer_first_half_team_totals",
+  "soccer_second_half_team_totals",
+  "total_corners",
+  "soccer_first_half_total_corners",
+  "soccer_second_half_total_corners",
+  "soccer_team_total_corners",
+  "soccer_player_assists",
+  "soccer_player_goals",
+  "soccer_player_goals_plus_assists",
+  "soccer_player_shots",
+  "soccer_player_shots_on_target",
+]);
+
 function parseJsonArray(value: string | string[] | number[]): string[] {
   if (Array.isArray(value)) {
     return value.map(String);
@@ -150,6 +183,43 @@ function decimalOddsFromNumber(price: number | null | undefined) {
   }
 
   return Math.round((1 / price) * 100) / 100;
+}
+
+function decimalOddsForOutcome(
+  market: PolymarketMarket,
+  outcome: string,
+  price: string
+) {
+  const priceOdds = decimalOddsFromProbability(price);
+  if (outcome.toLowerCase() !== "yes") return priceOdds;
+
+  const askOdds = decimalOddsFromNumber(market.bestAsk);
+  return askOdds && askOdds > 1.01 ? askOdds : priceOdds;
+}
+
+function formatLine(line: number) {
+  return line > 0 ? `+${line}` : String(line);
+}
+
+function parseLineFromText(value: string | undefined) {
+  if (!value) return null;
+
+  const parenMatch = value.match(/\(([-+]?\d+(?:\.\d+)?)\)/);
+  if (parenMatch) return Number(parenMatch[1]);
+
+  const numberMatch = value.match(/([-+]?\d+(?:\.\d+)?)/);
+  return numberMatch ? Number(numberMatch[1]) : null;
+}
+
+function parseSpreadTitle(market: PolymarketMarket) {
+  const title = market.groupItemTitle || market.question;
+  const match = title.match(/^(?:Spread:\s*)?(.+?)\s*\(([-+]?\d+(?:\.\d+)?)\)/i);
+  if (!match) return null;
+
+  return {
+    team: match[1].trim(),
+    line: Number(match[2]),
+  };
 }
 
 function betTypeFromMarket(market: PolymarketMarket): BetOption["bet_type"] {
@@ -279,6 +349,27 @@ function selectionWithOutcome(
 ) {
   const baseSelection = selectionFromQuestion(market, match, outcome);
   const normalizedOutcome = outcome.toLowerCase();
+  const marketType = market.sportsMarketType ?? "";
+
+  if (SPREAD_MARKET_TYPES.has(marketType)) {
+    const spread = parseSpreadTitle(market);
+    if (!spread) return baseSelection;
+
+    const selectedLine =
+      normalizeName(outcome) === normalizeName(spread.team)
+        ? spread.line
+        : -spread.line;
+    return `${outcome} ${formatLine(selectedLine)}`;
+  }
+
+  if (
+    LINE_MARKET_TYPES.has(marketType) &&
+    normalizedOutcome !== "yes" &&
+    normalizedOutcome !== "no"
+  ) {
+    const line = market.line ?? parseLineFromText(market.groupItemTitle);
+    return line == null ? outcome : `${outcome} ${formatLine(line)}`;
+  }
 
   if (normalizedOutcome === "yes") return baseSelection;
   if (normalizedOutcome === "no") return `不是：${baseSelection}`;
@@ -308,11 +399,7 @@ function optionFromMarket(
 
   return usableOutcomes
     .map(({ outcome, price, index }) => {
-      const odds =
-        outcome.toLowerCase() === "yes"
-          ? decimalOddsFromNumber(market.bestAsk) ??
-            decimalOddsFromProbability(price)
-          : decimalOddsFromProbability(price);
+      const odds = decimalOddsForOutcome(market, outcome, price);
       if (!odds || odds <= 1) return null;
 
       return {
