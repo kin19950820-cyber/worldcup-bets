@@ -3,6 +3,7 @@
 import { createClient, createServiceClient } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
 import type { BetType } from "@/lib/types";
+import { isMatchClosed } from "@/lib/match-status";
 import {
   getParlayPossibleReturn,
   PARLAY_BET_TYPE,
@@ -36,7 +37,7 @@ export async function createBet(formData: FormData) {
   if (isNaN(odds) || odds <= 1) return { error: "賠率必須大於 1" };
   if (isNaN(stake) || stake <= 0) return { error: "投注額必須大於 0" };
 
-  // Verify match hasn't started
+  // Allow betting until the match is truly closed.
   const { data: match, error: matchErr } = await supabase
     .from("matches")
     .select("kickoff_time, status, home_team, away_team")
@@ -44,10 +45,7 @@ export async function createBet(formData: FormData) {
     .single();
 
   if (matchErr || !match) return { error: "找不到此賽事" };
-  if (new Date(match.kickoff_time) <= new Date())
-    return { error: "賽事已開始，不能投注" };
-  if (!["SCHEDULED", "TIMED"].includes(match.status))
-    return { error: "此賽事狀態不允許投注" };
+  if (isMatchClosed(match.status)) return { error: "此賽事已完結，不能投注" };
 
   // Check balance
   const { data: profile } = await supabase
@@ -158,7 +156,6 @@ export async function createParlay(legsInput: ParlayLegInput[], stakeInput: numb
   }
 
   const matchMap = new Map(matches.map((match) => [match.id, match]));
-  const now = Date.now();
   const legs: ParlayLeg[] = legsInput.map((input, index) => {
     const match = matchMap.get(input.match_id)!;
     return {
@@ -176,13 +173,10 @@ export async function createParlay(legsInput: ParlayLegInput[], stakeInput: numb
 
   const invalidMatch = legs.find((leg) => {
     const match = matchMap.get(leg.match_id)!;
-    return (
-      new Date(match.kickoff_time).getTime() <= now ||
-      !["SCHEDULED", "TIMED"].includes(match.status)
-    );
+    return isMatchClosed(match.status);
   });
   if (invalidMatch) {
-    return { error: `${invalidMatch.home_team} 對 ${invalidMatch.away_team} 已不可投注` };
+    return { error: `${invalidMatch.home_team} 對 ${invalidMatch.away_team} 已完結，不能投注` };
   }
 
   const totalOdds = Math.round(

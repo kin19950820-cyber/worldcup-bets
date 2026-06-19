@@ -1,6 +1,7 @@
 "use server";
 
 import { createClient, createServiceClient } from "@/lib/supabase/server";
+import { isMatchClosed } from "@/lib/match-status";
 
 export async function getUpcomingMatches() {
   const supabase = await createClient();
@@ -8,12 +9,10 @@ export async function getUpcomingMatches() {
   const { data, error } = await supabase
     .from("matches")
     .select("*")
-    .gte("kickoff_time", new Date().toISOString())
-    .in("status", ["SCHEDULED", "TIMED"])
     .order("kickoff_time", { ascending: true });
 
   if (error) return { matches: [], error: error.message };
-  return { matches: data ?? [] };
+  return { matches: (data ?? []).filter((match) => !isMatchClosed(match.status)) };
 }
 
 export async function getAllMatches() {
