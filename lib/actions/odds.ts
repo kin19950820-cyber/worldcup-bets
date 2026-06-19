@@ -94,7 +94,8 @@ type HkjcGraphqlResponse = {
 
 const HKJC_GRAPHQL_ENDPOINT =
   process.env.HKJC_GRAPHQL_ENDPOINT ?? "https://info.cld.hkjc.com/graphql/base/";
-const HKJC_FOOTBALL_REFERER = "https://football.hkjc.com/en-us/home";
+const HKJC_FOOTBALL_ORIGIN = "https://bet.hkjc.com";
+const HKJC_FOOTBALL_REFERER = "https://bet.hkjc.com/";
 const HKJC_ODDS_BATCH_SIZE = 4;
 
 const HKJC_ODDS_TYPES: HkjcOddsType[] = [
@@ -134,26 +135,93 @@ query matchList($startIndex: Int, $endIndex: Int, $startDate: String, $endDate: 
     kickOffTime
     status
     updateAt
+    sequence
+    esIndicatorEnabled
     homeTeam {
+      id
       name_en
       name_ch
     }
     awayTeam {
+      id
       name_en
       name_ch
     }
     tournament {
+      id
+      frontEndId
+      nameProfileId
+      isInteractiveServiceAvailable
       code
       name_en
       name_ch
+    }
+    isInteractiveServiceAvailable
+    inplayDelay
+    venue {
+      code
+      name_en
+      name_ch
+    }
+    tvChannels {
+      code
+      name_en
+      name_ch
+    }
+    liveEvents {
+      id
+      code
+    }
+    featureStartTime
+    featureMatchSequence
+    poolInfo {
+      normalPools
+      inplayPools
+      sellingPools
+      ntsInfo
+      entInfo
+      definedPools
+      ngsInfo {
+        str
+        name_en
+        name_ch
+        instNo
+      }
+      agsInfo {
+        str
+        name_en
+        name_ch
+      }
+    }
+    runningResult {
+      homeScore
+      awayScore
+      corner
+      homeCorner
+      awayCorner
+    }
+    runningResultExtra {
+      homeScore
+      awayScore
+      corner
+      homeCorner
+      awayCorner
+    }
+    adminOperation {
+      remark {
+        typ
+      }
     }
     foPools(fbOddsTypes: $fbOddsTypes) {
       id
       status
       oddsType
+      instNo
+      inplay
       name_ch
       name_en
       updateAt
+      expectedSuspendDateTime
       lines {
         lineId
         status
@@ -163,6 +231,7 @@ query matchList($startIndex: Int, $endIndex: Int, $startDate: String, $endDate: 
           combId
           str
           status
+          offerEarlySettlement
           currentOdds
           selections {
             selId
@@ -385,7 +454,8 @@ async function fetchHkjcFootballMatches(
     headers: {
       accept: "application/json, text/plain, */*",
       "content-type": "application/json",
-      origin: "https://football.hkjc.com",
+      origin: HKJC_FOOTBALL_ORIGIN,
+      priority: "u=1, i",
       referer: HKJC_FOOTBALL_REFERER,
       "user-agent":
         "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36",
