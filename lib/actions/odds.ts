@@ -255,10 +255,10 @@ const BET_TYPE_BY_HKJC_ODDS_TYPE: Record<
   HIL: "入球大細",
   CRS: "波膽",
   FCS: "波膽",
-  FHA: "半全場",
+  FHA: "半場主客和",
   HFT: "半全場",
   FHL: "入球大細",
-  TTG: "入球大細",
+  TTG: "入球數",
   FTS: "首名入球",
   FGS: "球員表現",
   AGS: "球員表現",
@@ -445,6 +445,13 @@ function playerPropPrefix(pool: HkjcPool) {
   return null;
 }
 
+function handicapPrefix(pool: HkjcPool) {
+  if (pool.oddsType === "HDC" || pool.oddsType === "HHA") return "全場";
+  if (pool.oddsType === "FHH") return "半場";
+
+  return null;
+}
+
 function compactLabel(parts: Array<string | undefined>) {
   return parts
     .map((part) => part?.trim())
@@ -465,6 +472,7 @@ function selectionLabel(
   }
 
   const propPrefix = playerPropPrefix(pool);
+  const hdcPrefix = handicapPrefix(pool);
   const selectionText =
     selections
       .map((selection) => localizedSelectionName(selection, match, pool))
@@ -490,9 +498,13 @@ function selectionLabel(
       : undefined;
 
   return compactLabel([
-    propPrefix ? `${propPrefix}：${selectionText}` : selectionText,
+    propPrefix
+      ? `${propPrefix}：${selectionText}`
+      : hdcPrefix
+      ? `${hdcPrefix}讓球：${selectionText}`
+      : selectionText,
     condition,
-    propPrefix ? undefined : pool.name_ch || pool.name_en,
+    propPrefix || hdcPrefix ? undefined : pool.name_ch || pool.name_en,
   ]);
 }
 
