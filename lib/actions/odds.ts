@@ -260,14 +260,14 @@ const BET_TYPE_BY_HKJC_ODDS_TYPE: Record<
   FHL: "入球大細",
   TTG: "入球大細",
   FTS: "首名入球",
-  FGS: "首名入球",
+  FGS: "球員表現",
   AGS: "球員表現",
-  LGS: "首名入球",
+  LGS: "球員表現",
   NTS: "球員表現",
-  CHL: "其他",
-  FCH: "其他",
-  FHC: "其他",
-  CHD: "其他",
+  CHL: "角球",
+  FCH: "角球",
+  FHC: "角球",
+  CHD: "角球",
   OOE: "特別盤",
   MSP: "特別盤",
   TQL: "晉級",
@@ -358,7 +358,10 @@ function chunks<T>(items: T[], size: number) {
 }
 
 function isOpenStatus(status: string | undefined) {
-  return !status || ["AVAILABLE", "SELLING", "OPEN"].includes(status);
+  return (
+    !status ||
+    ["AVAILABLE", "SELLING", "SELLINGSTARTED", "OPEN"].includes(status)
+  );
 }
 
 function parseOdds(value: string | undefined) {
@@ -374,6 +377,74 @@ function selectionName(selection: HkjcSelection | undefined) {
   return selection?.name_ch || selection?.name_en || selection?.str || "";
 }
 
+function invertSignedNumber(value: string) {
+  if (value.startsWith("+")) return `-${value.slice(1)}`;
+  if (value.startsWith("-")) return `+${value.slice(1)}`;
+  return `-${value}`;
+}
+
+function invertHandicapCondition(condition: string | undefined) {
+  if (!condition) return condition;
+
+  return condition.replace(/[+-]?\d+(?:\.\d+)?/g, invertSignedNumber);
+}
+
+function localizedSelectionName(
+  selection: HkjcSelection | undefined,
+  match: Match,
+  pool: HkjcPool
+) {
+  const value = selectionName(selection);
+  const normalizedValue = normalizeName(value || selection?.str || "");
+
+  if (
+    ["HIL", "FHL", "CHL", "FCH", "FHC", "CHD"].includes(pool.oddsType) &&
+    (["high", "hi", "over", "h"].includes(normalizedValue) ||
+      normalizedValue.includes("大"))
+  ) {
+    return "大";
+  }
+  if (
+    ["HIL", "FHL", "CHL", "FCH", "FHC", "CHD"].includes(pool.oddsType) &&
+    (["low", "lo", "under", "l"].includes(normalizedValue) ||
+      normalizedValue.includes("細"))
+  ) {
+    return "細";
+  }
+  if (["home", "h"].includes(normalizedValue) || normalizedValue.includes("主隊")) {
+    return match.home_team;
+  }
+  if (["away", "a"].includes(normalizedValue) || normalizedValue.includes("客隊")) {
+    return match.away_team;
+  }
+  if (["draw", "d"].includes(normalizedValue) || normalizedValue === "和") {
+    return "和局";
+  }
+
+  return value;
+}
+
+function halfFullLabel(value: string) {
+  return value
+    .split(/[:/]/)
+    .map((char) => {
+      if (char === "H") return "主";
+      if (char === "A") return "客";
+      if (char === "D") return "和";
+      return char;
+    })
+    .join("/");
+}
+
+function playerPropPrefix(pool: HkjcPool) {
+  if (pool.oddsType === "FGS") return "首名入球";
+  if (pool.oddsType === "AGS") return "入球";
+  if (pool.oddsType === "LGS") return "最後入球";
+  if (pool.oddsType === "NTS") return "不入球";
+
+  return null;
+}
+
 function compactLabel(parts: Array<string | undefined>) {
   return parts
     .map((part) => part?.trim())
@@ -383,29 +454,46 @@ function compactLabel(parts: Array<string | undefined>) {
 }
 
 function selectionLabel(
+  match: Match,
   pool: HkjcPool,
   line: HkjcLine,
   combination: HkjcCombination
 ) {
   const selections = combination.selections ?? [];
+  if (pool.oddsType === "HFT" || pool.oddsType === "FHA") {
+    return halfFullLabel(combination.str ?? selectionName(selections[0]) ?? "");
+  }
+
+  const propPrefix = playerPropPrefix(pool);
   const selectionText =
-    selections.map(selectionName).filter(Boolean).join(" / ") ||
+    selections
+      .map((selection) => localizedSelectionName(selection, match, pool))
+      .filter(Boolean)
+      .join(" / ") ||
     combination.str ||
     "";
+  const selectedFirstName = selections[0]
+    ? normalizeName(selections[0].str || selectionName(selections[0]) || "")
+    : "";
   const condition =
-    pool.oddsType === "HDC" ||
-    pool.oddsType === "HHA" ||
-    pool.oddsType === "HIL" ||
-    pool.oddsType === "FHL" ||
-    pool.oddsType === "CHL" ||
-    pool.oddsType === "FCH" ||
-    pool.oddsType === "FHH" ||
-    pool.oddsType === "FHC" ||
-    pool.oddsType === "CHD"
+    pool.oddsType === "HDC" || pool.oddsType === "HHA" || pool.oddsType === "FHH"
+      ? ["away", "a"].includes(selectedFirstName)
+        ? invertHandicapCondition(line.condition)
+        : line.condition
+      : pool.oddsType === "HIL" ||
+        pool.oddsType === "FHL" ||
+        pool.oddsType === "CHL" ||
+        pool.oddsType === "FCH" ||
+        pool.oddsType === "FHC" ||
+        pool.oddsType === "CHD"
       ? line.condition
       : undefined;
 
-  return compactLabel([selectionText, condition, pool.name_ch || pool.name_en]);
+  return compactLabel([
+    propPrefix ? `${propPrefix}：${selectionText}` : selectionText,
+    condition,
+    propPrefix ? undefined : pool.name_ch || pool.name_en,
+  ]);
 }
 
 function optionFromHkjcPool(
@@ -426,7 +514,7 @@ function optionFromHkjcPool(
         const odds = parseOdds(combination.currentOdds);
         if (!odds) return null;
 
-        const selection = selectionLabel(pool, line, combination);
+        const selection = selectionLabel(match, pool, line, combination);
         if (!selection) return null;
 
         return {
@@ -448,7 +536,6 @@ async function fetchHkjcFootballMatches(
   oddsTypes: HkjcOddsType[],
   matches: Match[]
 ) {
-  const { startDate, endDate } = matchDateRange(matches);
   const response = await fetch(HKJC_GRAPHQL_ENDPOINT, {
     method: "POST",
     headers: {
@@ -466,8 +553,8 @@ async function fetchHkjcFootballMatches(
       variables: {
         fbOddsTypes: oddsTypes,
         fbOddsTypesM: oddsTypes,
-        startDate,
-        endDate,
+        startDate: null,
+        endDate: null,
         matchIds: null,
         tournIds: null,
         inplayOnly: false,
@@ -516,6 +603,18 @@ function mergeHkjcMatches(existing: HkjcMatch[], incoming: HkjcMatch[]) {
   return Array.from(byId.values());
 }
 
+function uniqueOptions(options: BetOption[]) {
+  const seen = new Set<string>();
+
+  return options.filter((option) => {
+    const key = `${option.bet_type}|${option.selection}|${option.odds}`;
+    if (seen.has(key)) return false;
+
+    seen.add(key);
+    return true;
+  });
+}
+
 export async function getBetOptionsForMatches(matches: Match[]) {
   if (matches.length === 0) return {};
 
@@ -531,13 +630,13 @@ export async function getBetOptionsForMatches(matches: Match[]) {
       const matchingHkjcMatches = hkjcMatches.filter((hkjcMatch) =>
         hkjcMatchMatchesLocalMatch(hkjcMatch, match)
       );
-      const options = matchingHkjcMatches
-        .flatMap((hkjcMatch) =>
+      const options = uniqueOptions(
+        matchingHkjcMatches.flatMap((hkjcMatch) =>
           (hkjcMatch.foPools ?? []).flatMap((pool) =>
             optionFromHkjcPool(match, hkjcMatch, pool)
           )
         )
-        .sort((a, b) =>
+      ).sort((a, b) =>
           a.bet_type === b.bet_type
             ? a.selection.localeCompare(b.selection)
             : a.bet_type.localeCompare(b.bet_type)
