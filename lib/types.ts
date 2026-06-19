@@ -70,6 +70,16 @@ export type Bet = {
   matches?: Match;
 };
 
+export type BetOption = {
+  id: string;
+  source: string;
+  market: string;
+  bet_type: Exclude<BetType, "過關">;
+  selection: string;
+  odds: number;
+  updated_at: string | null;
+};
+
 export type Transaction = {
   id: string;
   user_id: string;

@@ -7,12 +7,13 @@ import {
   createParlay,
   type ParlayLegInput,
 } from "@/lib/actions/bets";
-import { BET_TYPES, type BetType, type Match } from "@/lib/types";
+import { BET_TYPES, type BetOption, type BetType, type Match } from "@/lib/types";
 import { formatCurrency, formatHKTime, cn } from "@/lib/utils";
 
 interface BetFormProps {
   matches: Match[];
   currentBalance: number;
+  oddsOptionsByMatchId: Record<string, BetOption[]>;
 }
 
 type Mode = "single" | "parlay";
@@ -22,6 +23,7 @@ type EditableLeg = {
   bet_type: Exclude<BetType, "過關"> | "";
   selection: string;
   odds: string;
+  option_id: string;
 };
 
 const SINGLE_BET_TYPES = BET_TYPES.filter(
@@ -37,15 +39,23 @@ function newLeg(): EditableLeg {
     bet_type: "",
     selection: "",
     odds: "",
+    option_id: "",
   };
 }
 
-export default function BetForm({ matches, currentBalance }: BetFormProps) {
+export default function BetForm({
+  matches,
+  currentBalance,
+  oddsOptionsByMatchId,
+}: BetFormProps) {
   const [mode, setMode] = useState<Mode>("single");
   const [pending, startTransition] = useTransition();
   const [stake, setStake] = useState("");
+  const [betType, setBetType] = useState<Exclude<BetType, "過關"> | "">("");
+  const [selection, setSelection] = useState("");
   const [odds, setOdds] = useState("");
   const [matchId, setMatchId] = useState("");
+  const [optionId, setOptionId] = useState("");
   const [legs, setLegs] = useState<EditableLeg[]>([newLeg(), newLeg()]);
 
   const stakeNum = Number(stake) || 0;
@@ -62,6 +72,19 @@ export default function BetForm({ matches, currentBalance }: BetFormProps) {
     stakeNum > 0
       ? stakeNum * (mode === "single" ? singleOdds : totalOdds)
       : 0;
+  const selectedMatchOptions = matchId ? oddsOptionsByMatchId[matchId] ?? [] : [];
+
+  const applySingleOption = (id: string) => {
+    setOptionId(id);
+    if (!id) return;
+
+    const option = selectedMatchOptions.find((item) => item.id === id);
+    if (!option) return;
+
+    setBetType(option.bet_type);
+    setSelection(option.selection);
+    setOdds(option.odds.toString());
+  };
 
   const updateLeg = (
     key: number,
@@ -70,6 +93,46 @@ export default function BetForm({ matches, currentBalance }: BetFormProps) {
   ) => {
     setLegs((current) =>
       current.map((leg) => (leg.key === key ? { ...leg, [field]: value } : leg))
+    );
+  };
+
+  const changeLegMatch = (key: number, match_id: string) => {
+    setLegs((current) =>
+      current.map((leg) =>
+        leg.key === key
+          ? {
+              ...leg,
+              match_id,
+              bet_type: "",
+              selection: "",
+              odds: "",
+              option_id: "",
+            }
+          : leg
+      )
+    );
+  };
+
+  const applyLegOption = (key: number, id: string) => {
+    const leg = legs.find((item) => item.key === key);
+    const option = leg
+      ? (oddsOptionsByMatchId[leg.match_id] ?? []).find((item) => item.id === id)
+      : null;
+
+    setLegs((current) =>
+      current.map((item) =>
+        item.key !== key
+          ? item
+          : option
+          ? {
+              ...item,
+              option_id: id,
+              bet_type: option.bet_type,
+              selection: option.selection,
+              odds: option.odds.toString(),
+            }
+          : { ...item, option_id: id }
+      )
     );
   };
 
@@ -90,6 +153,9 @@ export default function BetForm({ matches, currentBalance }: BetFormProps) {
       setStake("");
       setOdds("");
       setMatchId("");
+      setBetType("");
+      setSelection("");
+      setOptionId("");
     });
   };
 
@@ -150,7 +216,19 @@ export default function BetForm({ matches, currentBalance }: BetFormProps) {
           <MatchSelect
             matches={matches}
             value={matchId}
-            onChange={setMatchId}
+            onChange={(value) => {
+              setMatchId(value);
+              setBetType("");
+              setSelection("");
+              setOdds("");
+              setOptionId("");
+            }}
+          />
+
+          <OddsOptionSelect
+            options={selectedMatchOptions}
+            value={optionId}
+            onChange={applySingleOption}
           />
 
           <div>
@@ -158,6 +236,10 @@ export default function BetForm({ matches, currentBalance }: BetFormProps) {
             <select
               name="bet_type"
               required
+              value={betType}
+              onChange={(event) =>
+                setBetType(event.target.value as Exclude<BetType, "過關"> | "")
+              }
               className="form-input appearance-none"
             >
               <option value="">選擇種類</option>
@@ -169,7 +251,7 @@ export default function BetForm({ matches, currentBalance }: BetFormProps) {
             </select>
           </div>
 
-          <SelectionInput />
+          <SelectionInput value={selection} onChange={setSelection} />
 
           <div>
             <label className="form-label">賠率</label>
@@ -245,7 +327,7 @@ export default function BetForm({ matches, currentBalance }: BetFormProps) {
                   required
                   value={leg.match_id}
                   onChange={(event) =>
-                    updateLeg(leg.key, "match_id", event.target.value)
+                    changeLegMatch(leg.key, event.target.value)
                   }
                   className="form-input appearance-none"
                 >
@@ -261,6 +343,14 @@ export default function BetForm({ matches, currentBalance }: BetFormProps) {
                     </option>
                   ))}
                 </select>
+
+                <OddsOptionSelect
+                  options={
+                    leg.match_id ? oddsOptionsByMatchId[leg.match_id] ?? [] : []
+                  }
+                  value={leg.option_id}
+                  onChange={(value) => applyLegOption(leg.key, value)}
+                />
 
                 <div className="grid grid-cols-2 gap-2">
                   <select
@@ -381,7 +471,46 @@ function MatchSelect({
   );
 }
 
-function SelectionInput() {
+function OddsOptionSelect({
+  options,
+  value,
+  onChange,
+}: {
+  options: BetOption[];
+  value: string;
+  onChange: (value: string) => void;
+}) {
+  if (options.length === 0) return null;
+
+  return (
+    <div>
+      <label className="form-label">市場選項</label>
+      <select
+        value={value}
+        onChange={(event) => onChange(event.target.value)}
+        className="form-input appearance-none"
+      >
+        <option value="">自訂輸入</option>
+        {options.map((option) => (
+          <option key={option.id} value={option.id}>
+            {option.source} · {option.selection} · {option.odds.toFixed(2)}
+          </option>
+        ))}
+      </select>
+      <p className="text-xs text-slate-500 mt-1">
+        選擇市場會自動填入投注選項和賠率，仍可手動修改。
+      </p>
+    </div>
+  );
+}
+
+function SelectionInput({
+  value,
+  onChange,
+}: {
+  value: string;
+  onChange: (value: string) => void;
+}) {
   return (
     <div>
       <label className="form-label">投注選項</label>
@@ -390,6 +519,8 @@ function SelectionInput() {
         type="text"
         required
         maxLength={100}
+        value={value}
+        onChange={(event) => onChange(event.target.value)}
         className="form-input"
         placeholder="例如：主勝、Over 2.5、香港 +0.25"
       />

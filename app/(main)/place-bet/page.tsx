@@ -1,4 +1,5 @@
 import { getUpcomingMatches } from "@/lib/actions/matches";
+import { getBetOptionsForMatches } from "@/lib/actions/odds";
 import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import BetForm from "@/components/bets/BetForm";
@@ -14,6 +15,7 @@ export default async function PlaceBetPage() {
     getUpcomingMatches(),
     supabase.from("profiles").select("current_balance").eq("id", user.id).single(),
   ]);
+  const oddsOptionsByMatchId = await getBetOptionsForMatches(matches);
 
   const balance = profileRes.data?.current_balance ?? 0;
 
@@ -29,7 +31,11 @@ export default async function PlaceBetPage() {
           <p className="text-sm mt-1">等待下一場比賽開放投注</p>
         </div>
       ) : (
-        <BetForm matches={matches} currentBalance={balance} />
+        <BetForm
+          matches={matches}
+          currentBalance={balance}
+          oddsOptionsByMatchId={oddsOptionsByMatchId}
+        />
       )}
     </div>
   );

@@ -6,14 +6,22 @@ export const dynamic = "force-dynamic";
 
 export default async function MatchesPage() {
   const { matches } = await getAllMatches();
+  const now = new Date();
+  const hkToday = formatHKTime(now, "yyyy-MM-dd");
+  const hkYesterday = formatHKTime(
+    new Date(now.getTime() - 24 * 60 * 60 * 1000),
+    "yyyy-MM-dd"
+  );
 
+  const yesterdayResults = matches.filter((m) => {
+    const matchDate = formatHKTime(m.kickoff_time, "yyyy-MM-dd");
+    return matchDate === hkYesterday && m.status === "FINISHED";
+  });
   const upcoming = matches.filter((m) =>
-    ["SCHEDULED", "TIMED"].includes(m.status) && new Date(m.kickoff_time) > new Date()
+    ["SCHEDULED", "TIMED"].includes(m.status) &&
+    formatHKTime(m.kickoff_time, "yyyy-MM-dd") >= hkToday
   );
   const live = matches.filter((m) => ["IN_PLAY", "PAUSED"].includes(m.status));
-  const finished = matches.filter((m) =>
-    ["FINISHED", "POSTPONED", "CANCELLED"].includes(m.status)
-  );
 
   return (
     <div className="max-w-lg mx-auto px-4 py-6 space-y-6">
@@ -21,14 +29,14 @@ export default async function MatchesPage() {
         ⚽ 賽程一覽
       </h1>
 
+      {yesterdayResults.length > 0 && (
+        <Section title="昨日賽果" matches={yesterdayResults} showScore />
+      )}
       {live.length > 0 && (
-        <Section title="🔴 比賽中" matches={live} showScore />
+        <Section title="比賽中" matches={live} showScore />
       )}
       {upcoming.length > 0 && (
-        <Section title="📅 即將開賽" matches={upcoming} showCountdown />
-      )}
-      {finished.length > 0 && (
-        <Section title="✅ 已完場" matches={finished} showScore />
+        <Section title="即將開賽" matches={upcoming} showCountdown />
       )}
 
       {matches.length === 0 && (
