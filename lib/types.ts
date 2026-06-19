@@ -111,7 +111,7 @@ export type DashboardData = {
   total_borrowed: number;
   loan_principal: number;
   loan_interest: number;
-  loan_effective_annual_rate: number;
+  loan_effective_weekly_rate: number;
   recent_bets: Bet[];
   upcoming_matches: Match[];
 };

@@ -15,14 +15,14 @@ type LoanCardProps = {
   totalBorrowed: number;
   loanPrincipal: number;
   loanInterest: number;
-  effectiveAnnualRate: number;
+  effectiveWeeklyRate: number;
 };
 
 export default function LoanCard({
   totalBorrowed,
   loanPrincipal,
   loanInterest,
-  effectiveAnnualRate,
+  effectiveWeeklyRate,
 }: LoanCardProps) {
   const [amount, setAmount] = useState("500");
   const [repaymentAmount, setRepaymentAmount] = useState(
@@ -111,9 +111,9 @@ export default function LoanCard({
           <p className="font-semibold text-white">{formatCurrency(loanInterest)}</p>
         </div>
         <div className="rounded-lg bg-slate-900/70 px-3 py-2">
-          <p className="text-slate-500">年利率</p>
+          <p className="text-slate-500">週利率</p>
           <p className="font-semibold text-white">
-            {(effectiveAnnualRate * 100).toFixed(2)}%
+            {(effectiveWeeklyRate * 100).toFixed(2)}%
           </p>
         </div>
       </div>

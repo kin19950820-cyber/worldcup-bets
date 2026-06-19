@@ -1,6 +1,6 @@
 const LOAN_TIER_SIZE = 1000;
-const INTEREST_STEP = 0.05;
-const DAYS_PER_YEAR = 365;
+const INTEREST_STEP = 0.1;
+const DAYS_PER_WEEK = 7;
 
 export type LoanTransaction = {
   amount: number;
@@ -12,14 +12,14 @@ export type LoanBalance = {
   principal: number;
   accruedInterest: number;
   totalOwed: number;
-  effectiveAnnualRate: number;
+  effectiveWeeklyRate: number;
 };
 
 export function roundMoney(amount: number) {
   return Math.round(amount * 100) / 100;
 }
 
-export function calculateAnnualInterestAmount(principal: number) {
+export function calculateWeeklyInterestAmount(principal: number) {
   let remaining = Math.max(principal, 0);
   let tier = 1;
   let interest = 0;
@@ -52,8 +52,8 @@ export function calculateLoanBalance(
       const elapsedDays =
         (transactionDate.getTime() - previousDate.getTime()) / 86400000;
       accruedInterest +=
-        (calculateAnnualInterestAmount(principal) * elapsedDays) /
-        DAYS_PER_YEAR;
+        (calculateWeeklyInterestAmount(principal) * elapsedDays) /
+        DAYS_PER_WEEK;
     }
 
     if (
@@ -75,7 +75,7 @@ export function calculateLoanBalance(
   if (previousDate && asOf > previousDate && principal > 0) {
     const elapsedDays = (asOf.getTime() - previousDate.getTime()) / 86400000;
     accruedInterest +=
-      (calculateAnnualInterestAmount(principal) * elapsedDays) / DAYS_PER_YEAR;
+      (calculateWeeklyInterestAmount(principal) * elapsedDays) / DAYS_PER_WEEK;
   }
 
   const roundedPrincipal = roundMoney(principal);
@@ -85,9 +85,9 @@ export function calculateLoanBalance(
     principal: roundedPrincipal,
     accruedInterest: roundedInterest,
     totalOwed: roundMoney(roundedPrincipal + roundedInterest),
-    effectiveAnnualRate:
+    effectiveWeeklyRate:
       roundedPrincipal > 0
-        ? calculateAnnualInterestAmount(roundedPrincipal) / roundedPrincipal
+        ? calculateWeeklyInterestAmount(roundedPrincipal) / roundedPrincipal
         : 0,
   };
 }

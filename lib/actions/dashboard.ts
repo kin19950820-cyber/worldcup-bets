@@ -56,7 +56,7 @@ export async function getDashboardData() {
     total_borrowed: loan_balance.totalOwed,
     loan_principal: loan_balance.principal,
     loan_interest: loan_balance.accruedInterest,
-    loan_effective_annual_rate: loan_balance.effectiveAnnualRate,
+    loan_effective_weekly_rate: loan_balance.effectiveWeeklyRate,
     recent_bets: recentBets,
     upcoming_matches: upcomingMatches,
   };

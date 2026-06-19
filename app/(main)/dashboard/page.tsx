@@ -26,7 +26,7 @@ export default async function DashboardPage() {
     total_borrowed,
     loan_principal,
     loan_interest,
-    loan_effective_annual_rate,
+    loan_effective_weekly_rate,
     recent_bets,
     upcoming_matches,
   } = data;
@@ -56,7 +56,7 @@ export default async function DashboardPage() {
         totalBorrowed={total_borrowed}
         loanPrincipal={loan_principal}
         loanInterest={loan_interest}
-        effectiveAnnualRate={loan_effective_annual_rate}
+        effectiveWeeklyRate={loan_effective_weekly_rate}
       />
 
       {/* Stats Row */}
