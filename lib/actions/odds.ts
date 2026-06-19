@@ -8,6 +8,8 @@ type PolymarketMarket = {
   outcomes: string;
   outcomePrices: string;
   sportsMarketType?: string;
+  groupItemTitle?: string;
+  line?: number;
   active?: boolean;
   closed?: boolean;
   updatedAt?: string;
@@ -74,48 +76,77 @@ function decimalOddsFromProbability(price: string) {
   return Math.round((1 / probability) * 100) / 100;
 }
 
-function optionFromMarket(
+function betTypeFromMarket(market: PolymarketMarket): BetOption["bet_type"] {
+  switch (market.sportsMarketType) {
+    case "moneyline":
+      return "主客和";
+    case "spread":
+    case "handicap":
+      return "讓球";
+    case "total":
+    case "team_total":
+      return "入球大細";
+    case "player_prop":
+      return "球員表現";
+    case "to_qualify":
+      return "晉級";
+    case "outright":
+      return "冠軍";
+    default:
+      return "特別盤";
+  }
+}
+
+function selectionFromQuestion(
   market: PolymarketMarket,
-  match: Match
-): BetOption | null {
-  if (!market.active || market.closed) return null;
-
-  const outcomes = parseJsonArray(market.outcomes);
-  const prices = parseJsonArray(market.outcomePrices);
-  const yesIndex = outcomes.findIndex(
-    (outcome) => outcome.toLowerCase() === "yes"
-  );
-  const yesPrice = yesIndex >= 0 ? prices[yesIndex] : null;
-  if (!yesPrice) return null;
-
-  const odds = decimalOddsFromProbability(yesPrice);
-  if (!odds || odds <= 1) return null;
-
+  match: Match,
+  outcome: string
+) {
   const question = market.question;
   const normalizedQuestion = normalizeName(question);
   const homeNames = teamNames(match.home_team);
   const awayNames = teamNames(match.away_team);
 
-  let selection: string | null = null;
-  if (normalizedQuestion.includes("draw")) {
-    selection = "和局";
-  } else if (homeNames.some((name) => normalizedQuestion.includes(name))) {
-    selection = match.home_team;
-  } else if (awayNames.some((name) => normalizedQuestion.includes(name))) {
-    selection = match.away_team;
+  if (outcome.toLowerCase() !== "yes") {
+    return `${outcome}：${question}`;
   }
 
-  if (!selection) return null;
+  if (normalizedQuestion.includes("draw")) return "和局";
+  if (homeNames.some((name) => normalizedQuestion.includes(name))) {
+    return match.home_team;
+  }
+  if (awayNames.some((name) => normalizedQuestion.includes(name))) {
+    return match.away_team;
+  }
 
-  return {
-    id: `polymarket-${market.id}`,
-    source: "Polymarket",
-    market: question,
-    bet_type: "主客和",
-    selection,
-    odds,
-    updated_at: market.updatedAt ?? null,
-  };
+  return market.groupItemTitle || question;
+}
+
+function optionFromMarket(
+  market: PolymarketMarket,
+  match: Match
+): BetOption[] {
+  if (!market.active || market.closed) return [];
+
+  const outcomes = parseJsonArray(market.outcomes);
+  const prices = parseJsonArray(market.outcomePrices);
+  const bet_type = betTypeFromMarket(market);
+
+  return outcomes
+    .map((outcome, index) => {
+      const odds = decimalOddsFromProbability(prices[index]);
+      if (!odds || odds <= 1) return null;
+
+      return {
+        id: `polymarket-${market.id}-${index}`,
+        market: market.question,
+        bet_type,
+        selection: selectionFromQuestion(market, match, outcome),
+        odds,
+        updated_at: market.updatedAt ?? null,
+      };
+    })
+    .filter((option): option is BetOption => option !== null);
 }
 
 export async function getBetOptionsForMatches(matches: Match[]) {
@@ -141,9 +172,12 @@ export async function getBetOptionsForMatches(matches: Match[]) {
       if (!event?.markets?.length) continue;
 
       const options = event.markets
-        .map((market) => optionFromMarket(market, match))
-        .filter((option): option is BetOption => option !== null)
-        .sort((a, b) => a.selection.localeCompare(b.selection));
+        .flatMap((market) => optionFromMarket(market, match))
+        .sort((a, b) =>
+          a.bet_type === b.bet_type
+            ? a.selection.localeCompare(b.selection)
+            : a.bet_type.localeCompare(b.bet_type)
+        );
 
       if (options.length > 0) {
         optionsByMatchId[match.id] = options;

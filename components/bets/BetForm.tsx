@@ -73,12 +73,28 @@ export default function BetForm({
       ? stakeNum * (mode === "single" ? singleOdds : totalOdds)
       : 0;
   const selectedMatchOptions = matchId ? oddsOptionsByMatchId[matchId] ?? [] : [];
+  const availableBetTypes = useMemo(() => {
+    const fetchedTypes = Object.values(oddsOptionsByMatchId)
+      .flat()
+      .map((option) => option.bet_type);
+
+    return Array.from(new Set([...SINGLE_BET_TYPES, ...fetchedTypes]));
+  }, [oddsOptionsByMatchId]);
+  const filteredSingleOptions = betType
+    ? selectedMatchOptions.filter((option) => option.bet_type === betType)
+    : [];
+  const getFilteredOptions = (selectedMatchId: string, selectedBetType: string) =>
+    selectedMatchId && selectedBetType
+      ? (oddsOptionsByMatchId[selectedMatchId] ?? []).filter(
+          (option) => option.bet_type === selectedBetType
+        )
+      : [];
 
   const applySingleOption = (id: string) => {
     setOptionId(id);
     if (!id) return;
 
-    const option = selectedMatchOptions.find((item) => item.id === id);
+    const option = filteredSingleOptions.find((item) => item.id === id);
     if (!option) return;
 
     setBetType(option.bet_type);
@@ -116,7 +132,9 @@ export default function BetForm({
   const applyLegOption = (key: number, id: string) => {
     const leg = legs.find((item) => item.key === key);
     const option = leg
-      ? (oddsOptionsByMatchId[leg.match_id] ?? []).find((item) => item.id === id)
+      ? getFilteredOptions(leg.match_id, leg.bet_type).find(
+          (item) => item.id === id
+        )
       : null;
 
     setLegs((current) =>
@@ -225,31 +243,34 @@ export default function BetForm({
             }}
           />
 
-          <OddsOptionSelect
-            options={selectedMatchOptions}
-            value={optionId}
-            onChange={applySingleOption}
-          />
-
           <div>
             <label className="form-label">投注種類</label>
             <select
               name="bet_type"
               required
               value={betType}
-              onChange={(event) =>
-                setBetType(event.target.value as Exclude<BetType, "過關"> | "")
-              }
+              onChange={(event) => {
+                setBetType(event.target.value as Exclude<BetType, "過關"> | "");
+                setOptionId("");
+                setSelection("");
+                setOdds("");
+              }}
               className="form-input appearance-none"
             >
               <option value="">選擇種類</option>
-              {SINGLE_BET_TYPES.map((type) => (
+              {availableBetTypes.map((type) => (
                 <option key={type} value={type}>
                   {type}
                 </option>
               ))}
             </select>
           </div>
+
+          <OddsOptionSelect
+            options={filteredSingleOptions}
+            value={optionId}
+            onChange={applySingleOption}
+          />
 
           <SelectionInput value={selection} onChange={setSelection} />
 
@@ -344,25 +365,20 @@ export default function BetForm({
                   ))}
                 </select>
 
-                <OddsOptionSelect
-                  options={
-                    leg.match_id ? oddsOptionsByMatchId[leg.match_id] ?? [] : []
-                  }
-                  value={leg.option_id}
-                  onChange={(value) => applyLegOption(leg.key, value)}
-                />
-
                 <div className="grid grid-cols-2 gap-2">
                   <select
                     required
                     value={leg.bet_type}
-                    onChange={(event) =>
-                      updateLeg(leg.key, "bet_type", event.target.value)
-                    }
+                    onChange={(event) => {
+                      updateLeg(leg.key, "bet_type", event.target.value);
+                      updateLeg(leg.key, "option_id", "");
+                      updateLeg(leg.key, "selection", "");
+                      updateLeg(leg.key, "odds", "");
+                    }}
                     className="form-input appearance-none"
                   >
                     <option value="">投注種類</option>
-                    {SINGLE_BET_TYPES.map((type) => (
+                    {availableBetTypes.map((type) => (
                       <option key={type} value={type}>
                         {type}
                       </option>
@@ -381,6 +397,12 @@ export default function BetForm({
                     placeholder="賠率"
                   />
                 </div>
+
+                <OddsOptionSelect
+                  options={getFilteredOptions(leg.match_id, leg.bet_type)}
+                  value={leg.option_id}
+                  onChange={(value) => applyLegOption(leg.key, value)}
+                />
 
                 <input
                   type="text"
@@ -493,7 +515,7 @@ function OddsOptionSelect({
         <option value="">自訂輸入</option>
         {options.map((option) => (
           <option key={option.id} value={option.id}>
-            {option.source} · {option.selection} · {option.odds.toFixed(2)}
+            {option.selection} · {option.odds.toFixed(2)}
           </option>
         ))}
       </select>

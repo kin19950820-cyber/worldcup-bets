@@ -31,6 +31,10 @@ export type BetType =
   | "波膽"
   | "半全場"
   | "首名入球"
+  | "球員表現"
+  | "晉級"
+  | "冠軍"
+  | "特別盤"
   | "其他";
 
 export const BET_TYPES: BetType[] = [
@@ -42,6 +46,10 @@ export const BET_TYPES: BetType[] = [
   "波膽",
   "半全場",
   "首名入球",
+  "球員表現",
+  "晉級",
+  "冠軍",
+  "特別盤",
   "其他",
 ];
 
@@ -72,7 +80,6 @@ export type Bet = {
 
 export type BetOption = {
   id: string;
-  source: string;
   market: string;
   bet_type: Exclude<BetType, "過關">;
   selection: string;

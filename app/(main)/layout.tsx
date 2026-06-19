@@ -25,8 +25,8 @@ export default async function MainLayout({
         role={profile?.role ?? "player"}
         balance={profile?.current_balance ?? 0}
       />
-      {/* main content — pb-20 on mobile to clear bottom nav */}
-      <main className="flex-1 pb-20 md:pb-0 md:pt-16">
+      {/* main content clears mobile top/bottom bars and desktop top bar */}
+      <main className="flex-1 pt-14 pb-20 md:pt-16 md:pb-0">
         {children}
       </main>
     </div>

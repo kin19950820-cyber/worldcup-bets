@@ -95,6 +95,28 @@ export default function Navbar({ displayName, role, balance }: NavbarProps) {
         </div>
       </header>
 
+      {/* Mobile Top Bar */}
+      <header className="md:hidden fixed top-0 inset-x-0 z-50 h-14 bg-slate-900/95 border-b border-slate-800 backdrop-blur flex items-center justify-between px-4">
+        <Link href="/dashboard" className="flex items-center gap-2 font-bold text-white">
+          <span className="text-lg">⚽</span>
+          <span className="text-sm">世盃賭局</span>
+        </Link>
+        <button
+          onClick={() => setMenuOpen(!menuOpen)}
+          className={cn(
+            "flex items-center gap-2 rounded-xl border px-3 py-1.5 text-sm transition-colors",
+            menuOpen
+              ? "border-brand-500/50 bg-brand-500/15 text-white"
+              : "border-slate-700 bg-slate-800/70 text-slate-300"
+          )}
+        >
+          <span className="font-semibold">我</span>
+          <span className="text-xs font-bold text-brand-400">
+            {formatCurrency(balance)}
+          </span>
+        </button>
+      </header>
+
       {/* Mobile Bottom Bar */}
       <nav className="md:hidden fixed bottom-0 inset-x-0 z-50 bg-slate-900 border-t border-slate-800 safe-area-pb">
         <div className="flex items-center">
@@ -119,18 +141,6 @@ export default function Navbar({ displayName, role, balance }: NavbarProps) {
               <span className="text-[10px] font-medium">{item.label}</span>
             </Link>
           ))}
-
-          {/* Mobile: show menu button for admin or profile */}
-          <button
-            onClick={() => setMenuOpen(!menuOpen)}
-            className={cn(
-              "flex-1 flex flex-col items-center justify-center py-2.5 gap-0.5",
-              menuOpen ? "text-white" : "text-slate-500"
-            )}
-          >
-            <span className="text-xl leading-none">👤</span>
-            <span className="text-[10px] font-medium">我</span>
-          </button>
         </div>
       </nav>
 
@@ -142,7 +152,7 @@ export default function Navbar({ displayName, role, balance }: NavbarProps) {
         >
           <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
           <div
-            className="absolute bottom-20 inset-x-4 bg-slate-900 border border-slate-700 rounded-2xl p-4 space-y-3"
+            className="absolute top-16 inset-x-4 bg-slate-900 border border-slate-700 rounded-2xl p-4 space-y-3"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-center justify-between pb-3 border-b border-slate-800">
