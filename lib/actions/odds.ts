@@ -2,508 +2,471 @@
 
 import type { BetOption, Match } from "@/lib/types";
 
-type PolymarketMarket = {
-  id: string;
-  question: string;
-  description?: string;
-  outcomes: string | string[];
-  outcomePrices: string | string[] | number[];
-  sportsMarketType?: string;
-  groupItemTitle?: string;
-  line?: number;
-  endDate?: string;
-  bestAsk?: number;
-  active?: boolean;
-  closed?: boolean;
-  updatedAt?: string;
-  events?: Array<{
-    title?: string;
-    description?: string;
-    parentEventId?: number | string;
-  }>;
+type HkjcOddsType =
+  | "HAD"
+  | "SGA"
+  | "CHP"
+  | "TQL"
+  | "FHA"
+  | "HHA"
+  | "HDC"
+  | "HIL"
+  | "FHL"
+  | "CHL"
+  | "FCH"
+  | "CRS"
+  | "FCS"
+  | "FTS"
+  | "TTG"
+  | "OOE"
+  | "FGS"
+  | "HFT"
+  | "MSP"
+  | "NTS"
+  | "FHH"
+  | "FHC"
+  | "CHD"
+  | "AGS"
+  | "LGS";
+
+type HkjcSelection = {
+  selId?: string;
+  str?: string;
+  name_ch?: string;
+  name_en?: string;
 };
 
-type PolymarketEvent = {
-  id: string;
-  title: string;
-  gameId?: number;
-  markets?: PolymarketMarket[];
+type HkjcCombination = {
+  combId?: string;
+  str?: string;
+  status?: string;
+  currentOdds?: string;
+  selections?: HkjcSelection[];
 };
 
-const POLYMARKET_WORLD_CUP_SERIES_ID = "11433";
-const SUPPLEMENTAL_MARKET_TYPES = [
-  "soccer_exact_score",
-  "correct_score",
-  "moneyline",
-  "spreads",
-  "match_handicap",
-  "double_chance",
-  "total_goals",
-  "totals",
-  "team_totals",
-  "game_team_totals",
-  "soccer_home_team_totals",
-  "soccer_away_team_totals",
-  "soccer_team_totals",
-  "both_teams_to_score",
-  "soccer_first_to_score",
-  "soccer_anytime_goalscorer",
-  "soccer_halftime_result",
-  "soccer_second_half_result",
-  "first_half_moneyline",
-  "first_half_spreads",
-  "first_half_totals",
-  "second_half_totals",
-  "soccer_first_half_team_totals",
-  "soccer_second_half_team_totals",
-  "both_teams_to_score_first_half",
-  "both_teams_to_score_second_half",
-  "total_corners",
-  "soccer_first_corner",
-  "soccer_first_half_total_corners",
-  "soccer_second_half_total_corners",
-  "soccer_team_total_corners",
-  "soccer_game_corners_odd_even",
-  "soccer_player_assists",
-  "soccer_player_goals",
-  "soccer_player_goals_plus_assists",
-  "soccer_player_shots",
-  "soccer_player_shots_on_target",
+type HkjcLine = {
+  lineId?: string;
+  status?: string;
+  condition?: string;
+  main?: boolean;
+  combinations?: HkjcCombination[];
+};
+
+type HkjcPool = {
+  id: string;
+  status?: string;
+  oddsType: HkjcOddsType;
+  name_ch?: string;
+  name_en?: string;
+  updateAt?: string;
+  lines?: HkjcLine[];
+};
+
+type HkjcMatch = {
+  id: string;
+  frontEndId?: string;
+  matchDate?: string;
+  kickOffTime?: string;
+  status?: string;
+  updateAt?: string;
+  homeTeam?: {
+    name_en?: string;
+    name_ch?: string;
+  };
+  awayTeam?: {
+    name_en?: string;
+    name_ch?: string;
+  };
+  tournament?: {
+    code?: string;
+    name_en?: string;
+    name_ch?: string;
+  };
+  foPools?: HkjcPool[];
+};
+
+type HkjcGraphqlResponse = {
+  data?: {
+    matches?: HkjcMatch[] | null;
+  };
+  errors?: Array<{ message?: string }>;
+};
+
+const HKJC_GRAPHQL_ENDPOINT =
+  process.env.HKJC_GRAPHQL_ENDPOINT ?? "https://info.cld.hkjc.com/graphql/base/";
+const HKJC_FOOTBALL_REFERER = "https://football.hkjc.com/en-us/home";
+const HKJC_ODDS_BATCH_SIZE = 4;
+
+const HKJC_ODDS_TYPES: HkjcOddsType[] = [
+  "HAD",
+  "HDC",
+  "HHA",
+  "HIL",
+  "CRS",
+  "FCS",
+  "FHA",
+  "HFT",
+  "FHL",
+  "TTG",
+  "FTS",
+  "FGS",
+  "AGS",
+  "LGS",
+  "NTS",
+  "CHL",
+  "FCH",
+  "FHC",
+  "CHD",
+  "OOE",
+  "MSP",
+  "TQL",
+  "CHP",
+  "SGA",
+  "FHH",
 ];
 
-const TEAM_ALIASES: Record<string, string[]> = {
-  USA: ["United States", "USMNT"],
-  "United States": ["USA", "USMNT"],
-  "Korea Republic": ["South Korea"],
-  "South Korea": ["Korea Republic"],
-  "IR Iran": ["Iran"],
-  Iran: ["IR Iran"],
-  Türkiye: ["Turkey"],
-  Turkey: ["Türkiye"],
+const HKJC_MATCH_QUERY = `
+query matchList($startIndex: Int, $endIndex: Int, $startDate: String, $endDate: String, $matchIds: [String], $tournIds: [String], $fbOddsTypes: [FBOddsType]!, $fbOddsTypesM: [FBOddsType]!, $inplayOnly: Boolean, $featuredMatchesOnly: Boolean, $frontEndIds: [String], $earlySettlementOnly: Boolean, $showAllMatch: Boolean) {
+  matches(startIndex: $startIndex, endIndex: $endIndex, startDate: $startDate, endDate: $endDate, matchIds: $matchIds, tournIds: $tournIds, fbOddsTypes: $fbOddsTypesM, inplayOnly: $inplayOnly, featuredMatchesOnly: $featuredMatchesOnly, frontEndIds: $frontEndIds, earlySettlementOnly: $earlySettlementOnly, showAllMatch: $showAllMatch) {
+    id
+    frontEndId
+    matchDate
+    kickOffTime
+    status
+    updateAt
+    homeTeam {
+      name_en
+      name_ch
+    }
+    awayTeam {
+      name_en
+      name_ch
+    }
+    tournament {
+      code
+      name_en
+      name_ch
+    }
+    foPools(fbOddsTypes: $fbOddsTypes) {
+      id
+      status
+      oddsType
+      name_ch
+      name_en
+      updateAt
+      lines {
+        lineId
+        status
+        condition
+        main
+        combinations {
+          combId
+          str
+          status
+          currentOdds
+          selections {
+            selId
+            str
+            name_ch
+            name_en
+          }
+        }
+      }
+    }
+  }
+}`;
+
+const BET_TYPE_BY_HKJC_ODDS_TYPE: Record<
+  HkjcOddsType,
+  BetOption["bet_type"]
+> = {
+  HAD: "主客和",
+  HDC: "讓球",
+  HHA: "讓球主客和",
+  HIL: "入球大細",
+  CRS: "波膽",
+  FCS: "波膽",
+  FHA: "半全場",
+  HFT: "半全場",
+  FHL: "入球大細",
+  TTG: "入球大細",
+  FTS: "首名入球",
+  FGS: "首名入球",
+  AGS: "球員表現",
+  LGS: "首名入球",
+  NTS: "球員表現",
+  CHL: "其他",
+  FCH: "其他",
+  FHC: "其他",
+  CHD: "其他",
+  OOE: "特別盤",
+  MSP: "特別盤",
+  TQL: "晉級",
+  CHP: "冠軍",
+  SGA: "特別盤",
+  FHH: "讓球",
 };
 
-const SPREAD_MARKET_TYPES = new Set([
-  "spread",
-  "handicap",
-  "spreads",
-  "match_handicap",
-  "first_half_spreads",
-]);
-
-const LINE_MARKET_TYPES = new Set([
-  "total",
-  "totals",
-  "total_goals",
-  "team_total",
-  "team_totals",
-  "game_team_totals",
-  "soccer_home_team_totals",
-  "soccer_away_team_totals",
-  "soccer_team_totals",
-  "first_half_totals",
-  "second_half_totals",
-  "soccer_first_half_team_totals",
-  "soccer_second_half_team_totals",
-  "total_corners",
-  "soccer_first_half_total_corners",
-  "soccer_second_half_total_corners",
-  "soccer_team_total_corners",
-  "soccer_player_assists",
-  "soccer_player_goals",
-  "soccer_player_goals_plus_assists",
-  "soccer_player_shots",
-  "soccer_player_shots_on_target",
-]);
-
-function parseJsonArray(value: string | string[] | number[]): string[] {
-  if (Array.isArray(value)) {
-    return value.map(String);
-  }
-
-  try {
-    const parsed = JSON.parse(value);
-    return Array.isArray(parsed) ? parsed.map(String) : [];
-  } catch {
-    return [];
-  }
-}
+const TEAM_ALIASES: Record<string, string[]> = {
+  USA: ["United States", "USMNT", "美國"],
+  "United States": ["USA", "USMNT", "美國"],
+  "Korea Republic": ["South Korea", "南韓", "韓國"],
+  "South Korea": ["Korea Republic", "南韓", "韓國"],
+  "IR Iran": ["Iran", "伊朗"],
+  Iran: ["IR Iran", "伊朗"],
+  Türkiye: ["Turkey", "土耳其"],
+  Turkey: ["Türkiye", "土耳其"],
+};
 
 function normalizeName(value: string) {
   return value
     .toLowerCase()
     .normalize("NFKD")
     .replace(/[\u0300-\u036f]/g, "")
-    .replace(/[^a-z0-9]+/g, " ")
+    .replace(/[^a-z0-9\u4e00-\u9fff]+/g, " ")
     .trim();
 }
 
 function teamNames(name: string) {
-  return [name, ...(TEAM_ALIASES[name] ?? [])].map(normalizeName);
+  return [name, ...(TEAM_ALIASES[name] ?? [])]
+    .map(normalizeName)
+    .filter(Boolean);
 }
 
-function titleMatchesEvent(title: string, match: Match) {
-  const normalizedTitle = normalizeName(title);
-  const homeNames = teamNames(match.home_team);
-  const awayNames = teamNames(match.away_team);
+function hkjcTeamNames(team: HkjcMatch["homeTeam"]) {
+  return [team?.name_en, team?.name_ch].filter(Boolean).map(String);
+}
 
-  return (
-    homeNames.some((name) => normalizedTitle.includes(name)) &&
-    awayNames.some((name) => normalizedTitle.includes(name))
+function hkjcMatchMatchesLocalMatch(hkjcMatch: HkjcMatch, match: Match) {
+  const homeNames = hkjcTeamNames(hkjcMatch.homeTeam).map(normalizeName);
+  const awayNames = hkjcTeamNames(hkjcMatch.awayTeam).map(normalizeName);
+  const localHomeNames = teamNames(match.home_team);
+  const localAwayNames = teamNames(match.away_team);
+
+  const homeMatches = localHomeNames.some((localName) =>
+    homeNames.some(
+      (hkjcName) =>
+        hkjcName.includes(localName) || localName.includes(hkjcName)
+    )
   );
-}
-
-function marketMatchesMatch(market: PolymarketMarket, match: Match) {
-  const searchableText = [
-    market.question,
-    market.description,
-    market.groupItemTitle,
-    ...(market.events ?? []).flatMap((event) => [
-      event.title,
-      event.description,
-    ]),
-  ]
-    .filter(Boolean)
-    .join(" ");
-
-  return titleMatchesEvent(searchableText, match);
-}
-
-function decimalOddsFromProbability(price: string) {
-  const probability = Number(price);
-  if (!Number.isFinite(probability) || probability <= 0 || probability >= 1) {
-    return null;
-  }
-
-  return Math.round((1 / probability) * 100) / 100;
-}
-
-function decimalOddsFromNumber(price: number | null | undefined) {
-  if (!Number.isFinite(price) || !price || price <= 0 || price >= 1) {
-    return null;
-  }
-
-  return Math.round((1 / price) * 100) / 100;
-}
-
-function decimalOddsForOutcome(
-  market: PolymarketMarket,
-  outcome: string,
-  price: string
-) {
-  const priceOdds = decimalOddsFromProbability(price);
-  if (outcome.toLowerCase() !== "yes") return priceOdds;
-
-  const askOdds = decimalOddsFromNumber(market.bestAsk);
-  return askOdds && askOdds > 1.01 ? askOdds : priceOdds;
-}
-
-function formatLine(line: number) {
-  return line > 0 ? `+${line}` : String(line);
-}
-
-function parseLineFromText(value: string | undefined) {
-  if (!value) return null;
-
-  const parenMatch = value.match(/\(([-+]?\d+(?:\.\d+)?)\)/);
-  if (parenMatch) return Number(parenMatch[1]);
-
-  const numberMatch = value.match(/([-+]?\d+(?:\.\d+)?)/);
-  return numberMatch ? Number(numberMatch[1]) : null;
-}
-
-function parseSpreadTitle(market: PolymarketMarket) {
-  const title = market.groupItemTitle || market.question;
-  const match = title.match(/^(?:Spread:\s*)?(.+?)\s*\(([-+]?\d+(?:\.\d+)?)\)/i);
-  if (!match) return null;
-
-  return {
-    team: match[1].trim(),
-    line: Number(match[2]),
-  };
-}
-
-function betTypeFromMarket(market: PolymarketMarket): BetOption["bet_type"] {
-  switch (market.sportsMarketType) {
-    case "moneyline":
-    case "double_chance":
-      return "主客和";
-    case "spread":
-    case "handicap":
-    case "spreads":
-    case "match_handicap":
-      return "讓球";
-    case "first_half_moneyline":
-    case "q1_moneyline":
-    case "q2_moneyline":
-    case "q3_moneyline":
-    case "q4_moneyline":
-    case "soccer_halftime_result":
-    case "soccer_second_half_result":
-      return "半全場";
-    case "first_half_spreads":
-      return "讓球";
-    case "first_half_totals":
-    case "second_half_totals":
-    case "soccer_first_half_team_totals":
-    case "soccer_second_half_team_totals":
-    case "both_teams_to_score_first_half":
-    case "both_teams_to_score_second_half":
-      return "入球大細";
-    case "total":
-    case "totals":
-    case "total_goals":
-    case "team_total":
-    case "team_totals":
-    case "game_team_totals":
-    case "soccer_home_team_totals":
-    case "soccer_away_team_totals":
-    case "soccer_team_totals":
-    case "both_teams_to_score":
-      return "入球大細";
-    case "soccer_first_to_score":
-    case "soccer_anytime_goalscorer":
-      return "首名入球";
-    case "soccer_player_goals":
-    case "soccer_player_goals_plus_assists":
-      return "球員表現";
-    case "correct_score":
-    case "soccer_exact_score":
-      return "波膽";
-    case "total_corners":
-    case "soccer_first_corner":
-    case "soccer_first_half_total_corners":
-    case "soccer_second_half_total_corners":
-    case "soccer_team_total_corners":
-    case "soccer_game_corners_odd_even":
-      return "其他";
-    case "soccer_player_assists":
-    case "player_prop":
-    case "soccer_player_goalkeeper_saves":
-    case "soccer_player_shots":
-    case "soccer_player_shots_on_target":
-      return "球員表現";
-    case "to_qualify":
-    case "soccer_team_to_advance":
-      return "晉級";
-    case "outright":
-      return "冠軍";
-    default:
-      return "特別盤";
-  }
-}
-
-function selectionFromQuestion(
-  market: PolymarketMarket,
-  match: Match,
-  outcome: string
-) {
-  const question = market.question;
-  const normalizedQuestion = normalizeName(question);
-  const homeNames = teamNames(match.home_team);
-  const awayNames = teamNames(match.away_team);
-
-  if (
-    market.sportsMarketType === "soccer_exact_score" ||
-    market.sportsMarketType === "correct_score"
-  ) {
-    return (market.groupItemTitle || question)
-      .replace(/^Exact Score:\s*/i, "")
-      .replace(/\?$/, "");
-  }
-
-  if (normalizedQuestion.includes("draw")) return "和局";
-  if (homeNames.some((name) => normalizedQuestion.includes(name))) {
-    return match.home_team;
-  }
-  if (awayNames.some((name) => normalizedQuestion.includes(name))) {
-    return match.away_team;
-  }
-
-  return market.groupItemTitle || question.replace(/^Will\s+/i, "");
-}
-
-function shouldUseOnlyYesOutcome(market: PolymarketMarket) {
-  return [
-    "moneyline",
-    "first_half_moneyline",
-    "q1_moneyline",
-    "q2_moneyline",
-    "q3_moneyline",
-    "q4_moneyline",
-    "double_chance",
-    "soccer_halftime_result",
-    "soccer_second_half_result",
-    "correct_score",
-    "soccer_exact_score",
-    "soccer_first_to_score",
-    "soccer_anytime_goalscorer",
-    "to_qualify",
-    "soccer_team_to_advance",
-  ].includes(market.sportsMarketType ?? "");
-}
-
-function selectionWithOutcome(
-  market: PolymarketMarket,
-  match: Match,
-  outcome: string
-) {
-  const baseSelection = selectionFromQuestion(market, match, outcome);
-  const normalizedOutcome = outcome.toLowerCase();
-  const marketType = market.sportsMarketType ?? "";
-
-  if (SPREAD_MARKET_TYPES.has(marketType)) {
-    const spread = parseSpreadTitle(market);
-    if (!spread) return baseSelection;
-
-    const selectedLine =
-      normalizeName(outcome) === normalizeName(spread.team)
-        ? spread.line
-        : -spread.line;
-    return `${outcome} ${formatLine(selectedLine)}`;
-  }
-
-  if (
-    LINE_MARKET_TYPES.has(marketType) &&
-    normalizedOutcome !== "yes" &&
-    normalizedOutcome !== "no"
-  ) {
-    const line = market.line ?? parseLineFromText(market.groupItemTitle);
-    return line == null ? outcome : `${outcome} ${formatLine(line)}`;
-  }
-
-  if (normalizedOutcome === "yes") return baseSelection;
-  if (normalizedOutcome === "no") return `不是：${baseSelection}`;
-
-  return outcome;
-}
-
-function optionFromMarket(
-  market: PolymarketMarket,
-  match: Match
-): BetOption[] {
-  if (market.active === false || market.closed) return [];
-
-  const outcomes = parseJsonArray(market.outcomes);
-  const prices = parseJsonArray(market.outcomePrices);
-  const bet_type = betTypeFromMarket(market);
-  const pricedOutcomes = outcomes.map((outcome, index) => ({
-    outcome,
-    price: prices[index],
-    index,
-  }));
-  const usableOutcomes = shouldUseOnlyYesOutcome(market)
-    ? pricedOutcomes.filter(
-        ({ outcome }) => outcome.toLowerCase() === "yes"
-      )
-    : pricedOutcomes;
-
-  return usableOutcomes
-    .map(({ outcome, price, index }) => {
-      const odds = decimalOddsForOutcome(market, outcome, price);
-      if (!odds || odds <= 1) return null;
-
-      return {
-        id: `polymarket-${market.id}-${index}`,
-        market: market.question,
-        bet_type,
-        selection: selectionWithOutcome(market, match, outcome),
-        odds,
-        updated_at: market.updatedAt ?? null,
-      };
-    })
-    .filter((option): option is BetOption => option !== null);
-}
-
-function utcDayRange(date: string) {
-  const value = new Date(date);
-  const start = new Date(
-    Date.UTC(value.getUTCFullYear(), value.getUTCMonth(), value.getUTCDate())
-  );
-  const end = new Date(start);
-  end.setUTCDate(end.getUTCDate() + 1);
-  end.setUTCMilliseconds(-1);
-
-  return {
-    start: start.toISOString(),
-    end: end.toISOString(),
-  };
-}
-
-async function fetchSupplementalMarkets(matches: Match[]) {
-  const ranges = Array.from(
-    new Map(
-      matches.map((match) => {
-        const range = utcDayRange(match.kickoff_time);
-        return [`${range.start}-${range.end}`, range];
-      })
-    ).values()
-  );
-
-  const responses = await Promise.all(
-    ranges.flatMap((range) =>
-      SUPPLEMENTAL_MARKET_TYPES.map(async (marketType) => {
-        try {
-          const url = new URL("https://gamma-api.polymarket.com/markets/keyset");
-          url.searchParams.set("closed", "false");
-          url.searchParams.set("limit", "100");
-          url.searchParams.set("sports_market_types", marketType);
-          url.searchParams.set("end_date_min", range.start);
-          url.searchParams.set("end_date_max", range.end);
-
-          const response = await fetch(url, { next: { revalidate: 60 } });
-          if (!response.ok) return [];
-
-          const data = (await response.json()) as {
-            markets?: PolymarketMarket[];
-          };
-          return data.markets ?? [];
-        } catch {
-          return [];
-        }
-      })
+  const awayMatches = localAwayNames.some((localName) =>
+    awayNames.some(
+      (hkjcName) =>
+        hkjcName.includes(localName) || localName.includes(hkjcName)
     )
   );
 
-  return responses.flat();
+  return homeMatches && awayMatches;
+}
+
+function hktDate(value: string) {
+  const parts = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "Asia/Hong_Kong",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).formatToParts(new Date(value));
+  const part = (type: string) =>
+    parts.find((item) => item.type === type)?.value ?? "";
+
+  return `${part("year")}-${part("month")}-${part("day")}`;
+}
+
+function matchDateRange(matches: Match[]) {
+  const dates = matches.map((match) => hktDate(match.kickoff_time)).sort();
+  return {
+    startDate: dates[0] ?? null,
+    endDate: dates[dates.length - 1] ?? null,
+  };
+}
+
+function chunks<T>(items: T[], size: number) {
+  const result: T[][] = [];
+  for (let index = 0; index < items.length; index += size) {
+    result.push(items.slice(index, index + size));
+  }
+  return result;
+}
+
+function isOpenStatus(status: string | undefined) {
+  return !status || ["AVAILABLE", "SELLING", "OPEN"].includes(status);
+}
+
+function parseOdds(value: string | undefined) {
+  if (!value || value === "---") return null;
+
+  const odds = Number(value);
+  if (!Number.isFinite(odds) || odds <= 1) return null;
+
+  return odds;
+}
+
+function selectionName(selection: HkjcSelection | undefined) {
+  return selection?.name_ch || selection?.name_en || selection?.str || "";
+}
+
+function compactLabel(parts: Array<string | undefined>) {
+  return parts
+    .map((part) => part?.trim())
+    .filter((part): part is string => Boolean(part))
+    .filter((part, index, array) => array.indexOf(part) === index)
+    .join(" ");
+}
+
+function selectionLabel(
+  pool: HkjcPool,
+  line: HkjcLine,
+  combination: HkjcCombination
+) {
+  const selections = combination.selections ?? [];
+  const selectionText =
+    selections.map(selectionName).filter(Boolean).join(" / ") ||
+    combination.str ||
+    "";
+  const condition =
+    pool.oddsType === "HDC" ||
+    pool.oddsType === "HHA" ||
+    pool.oddsType === "HIL" ||
+    pool.oddsType === "FHL" ||
+    pool.oddsType === "CHL" ||
+    pool.oddsType === "FCH" ||
+    pool.oddsType === "FHH" ||
+    pool.oddsType === "FHC" ||
+    pool.oddsType === "CHD"
+      ? line.condition
+      : undefined;
+
+  return compactLabel([selectionText, condition, pool.name_ch || pool.name_en]);
+}
+
+function optionFromHkjcPool(
+  match: Match,
+  hkjcMatch: HkjcMatch,
+  pool: HkjcPool
+): BetOption[] {
+  if (!isOpenStatus(pool.status)) return [];
+
+  const bet_type = BET_TYPE_BY_HKJC_ODDS_TYPE[pool.oddsType] ?? "特別盤";
+
+  return (pool.lines ?? [])
+    .filter((line) => isOpenStatus(line.status))
+    .flatMap((line) =>
+      (line.combinations ?? []).map((combination) => {
+        if (!isOpenStatus(combination.status)) return null;
+
+        const odds = parseOdds(combination.currentOdds);
+        if (!odds) return null;
+
+        const selection = selectionLabel(pool, line, combination);
+        if (!selection) return null;
+
+        return {
+          id: `hkjc-${hkjcMatch.id}-${pool.id}-${line.lineId ?? "line"}-${
+            combination.combId ?? combination.str ?? selection
+          }`,
+          market: pool.name_ch || pool.name_en || pool.oddsType,
+          bet_type,
+          selection,
+          odds,
+          updated_at: pool.updateAt || hkjcMatch.updateAt || null,
+        };
+      })
+    )
+    .filter((option): option is BetOption => option !== null);
+}
+
+async function fetchHkjcFootballMatches(
+  oddsTypes: HkjcOddsType[],
+  matches: Match[]
+) {
+  const { startDate, endDate } = matchDateRange(matches);
+  const response = await fetch(HKJC_GRAPHQL_ENDPOINT, {
+    method: "POST",
+    headers: {
+      accept: "application/json, text/plain, */*",
+      "content-type": "application/json",
+      origin: "https://football.hkjc.com",
+      referer: HKJC_FOOTBALL_REFERER,
+      "user-agent":
+        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36",
+    },
+    body: JSON.stringify({
+      operationName: "matchList",
+      query: HKJC_MATCH_QUERY,
+      variables: {
+        fbOddsTypes: oddsTypes,
+        fbOddsTypesM: oddsTypes,
+        startDate,
+        endDate,
+        matchIds: null,
+        tournIds: null,
+        inplayOnly: false,
+        featuredMatchesOnly: false,
+        frontEndIds: null,
+        earlySettlementOnly: false,
+        showAllMatch: false,
+        startIndex: null,
+        endIndex: null,
+      },
+    }),
+    next: { revalidate: 60 },
+  });
+
+  if (!response.ok) return [];
+
+  const data = (await response.json()) as HkjcGraphqlResponse;
+  if (data.errors?.length) {
+    console.warn(
+      "HKJC odds fetch failed:",
+      data.errors.map((error) => error.message).join("; ")
+    );
+    return [];
+  }
+
+  return data.data?.matches ?? [];
+}
+
+function mergeHkjcMatches(existing: HkjcMatch[], incoming: HkjcMatch[]) {
+  const byId = new Map(existing.map((match) => [match.id, match]));
+
+  for (const match of incoming) {
+    const current = byId.get(match.id);
+    if (!current) {
+      byId.set(match.id, match);
+      continue;
+    }
+
+    const seenPoolIds = new Set((current.foPools ?? []).map((pool) => pool.id));
+    current.foPools = [
+      ...(current.foPools ?? []),
+      ...(match.foPools ?? []).filter((pool) => !seenPoolIds.has(pool.id)),
+    ];
+  }
+
+  return Array.from(byId.values());
 }
 
 export async function getBetOptionsForMatches(matches: Match[]) {
   if (matches.length === 0) return {};
 
   try {
-    const url = new URL("https://gamma-api.polymarket.com/events");
-    url.searchParams.set("series_id", POLYMARKET_WORLD_CUP_SERIES_ID);
-    url.searchParams.set("active", "true");
-    url.searchParams.set("closed", "false");
-    url.searchParams.set("limit", "500");
+    let hkjcMatches: HkjcMatch[] = [];
+    for (const oddsTypes of chunks(HKJC_ODDS_TYPES, HKJC_ODDS_BATCH_SIZE)) {
+      const batchMatches = await fetchHkjcFootballMatches(oddsTypes, matches);
+      hkjcMatches = mergeHkjcMatches(hkjcMatches, batchMatches);
+    }
 
-    const response = await fetch(url, { next: { revalidate: 60 } });
-    if (!response.ok) return {};
-
-    const events = (await response.json()) as PolymarketEvent[];
-    const supplementalMarkets = await fetchSupplementalMarkets(matches);
     const optionsByMatchId: Record<string, BetOption[]> = {};
-
     for (const match of matches) {
-      const event = events.find((candidate) =>
-        titleMatchesEvent(candidate.title, match)
+      const matchingHkjcMatches = hkjcMatches.filter((hkjcMatch) =>
+        hkjcMatchMatchesLocalMatch(hkjcMatch, match)
       );
-      const eventMarkets = event?.markets ?? [];
-      const extraMarkets = supplementalMarkets.filter((market) =>
-        marketMatchesMatch(market, match)
-      );
-
-      const seenMarketIds = new Set<string>();
-      const markets = [...eventMarkets, ...extraMarkets].filter((market) => {
-        if (seenMarketIds.has(market.id)) return false;
-        seenMarketIds.add(market.id);
-        return true;
-      });
-
-      if (markets.length === 0) continue;
-
-      const options = markets
-        .flatMap((market) => optionFromMarket(market, match))
+      const options = matchingHkjcMatches
+        .flatMap((hkjcMatch) =>
+          (hkjcMatch.foPools ?? []).flatMap((pool) =>
+            optionFromHkjcPool(match, hkjcMatch, pool)
+          )
+        )
         .sort((a, b) =>
           a.bet_type === b.bet_type
             ? a.selection.localeCompare(b.selection)
@@ -516,7 +479,8 @@ export async function getBetOptionsForMatches(matches: Match[]) {
     }
 
     return optionsByMatchId;
-  } catch {
+  } catch (error) {
+    console.warn("HKJC odds fetch failed:", error);
     return {};
   }
 }
