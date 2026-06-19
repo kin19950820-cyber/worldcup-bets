@@ -452,6 +452,13 @@ function handicapPrefix(pool: HkjcPool) {
   return null;
 }
 
+function hiLoPrefix(pool: HkjcPool) {
+  if (pool.oddsType === "HIL") return "全場";
+  if (pool.oddsType === "FHL") return "半場";
+
+  return null;
+}
+
 function compactLabel(parts: Array<string | undefined>) {
   return parts
     .map((part) => part?.trim())
@@ -473,6 +480,7 @@ function selectionLabel(
 
   const propPrefix = playerPropPrefix(pool);
   const hdcPrefix = handicapPrefix(pool);
+  const hiLoScope = hiLoPrefix(pool);
   const selectionText =
     selections
       .map((selection) => localizedSelectionName(selection, match, pool))
@@ -502,9 +510,11 @@ function selectionLabel(
       ? `${propPrefix}：${selectionText}`
       : hdcPrefix
       ? `${hdcPrefix}讓球：${selectionText}`
+      : hiLoScope
+      ? `${hiLoScope}入球大細：${selectionText}`
       : selectionText,
     condition,
-    propPrefix || hdcPrefix ? undefined : pool.name_ch || pool.name_en,
+    propPrefix || hdcPrefix || hiLoScope ? undefined : pool.name_ch || pool.name_en,
   ]);
 }
 
