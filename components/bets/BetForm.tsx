@@ -515,7 +515,7 @@ function OddsOptionSelect({
         <option value="">自訂輸入</option>
         {options.map((option) => (
           <option key={option.id} value={option.id}>
-            {option.selection} · {option.odds.toFixed(2)}
+            {option.selection} · 賠率 {option.odds.toFixed(2)}
           </option>
         ))}
       </select>

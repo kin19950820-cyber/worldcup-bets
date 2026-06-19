@@ -6,8 +6,8 @@ type PolymarketMarket = {
   id: string;
   question: string;
   description?: string;
-  outcomes: string;
-  outcomePrices: string;
+  outcomes: string | string[];
+  outcomePrices: string | string[] | number[];
   sportsMarketType?: string;
   groupItemTitle?: string;
   line?: number;
@@ -82,7 +82,11 @@ const TEAM_ALIASES: Record<string, string[]> = {
   Turkey: ["Türkiye"],
 };
 
-function parseJsonArray(value: string): string[] {
+function parseJsonArray(value: string | string[] | number[]): string[] {
+  if (Array.isArray(value)) {
+    return value.map(String);
+  }
+
   try {
     const parsed = JSON.parse(value);
     return Array.isArray(parsed) ? parsed.map(String) : [];
@@ -151,27 +155,30 @@ function decimalOddsFromNumber(price: number | null | undefined) {
 function betTypeFromMarket(market: PolymarketMarket): BetOption["bet_type"] {
   switch (market.sportsMarketType) {
     case "moneyline":
+    case "double_chance":
+      return "主客和";
     case "spread":
     case "handicap":
     case "spreads":
     case "match_handicap":
-    case "double_chance":
-      return "Game Lines";
+      return "讓球";
     case "first_half_moneyline":
-    case "first_half_spreads":
-    case "first_half_totals":
     case "q1_moneyline":
     case "q2_moneyline":
     case "q3_moneyline":
     case "q4_moneyline":
     case "soccer_halftime_result":
     case "soccer_second_half_result":
+      return "半全場";
+    case "first_half_spreads":
+      return "讓球";
+    case "first_half_totals":
     case "second_half_totals":
     case "soccer_first_half_team_totals":
     case "soccer_second_half_team_totals":
     case "both_teams_to_score_first_half":
     case "both_teams_to_score_second_half":
-      return "Halves";
+      return "入球大細";
     case "total":
     case "totals":
     case "total_goals":
@@ -182,31 +189,26 @@ function betTypeFromMarket(market: PolymarketMarket): BetOption["bet_type"] {
     case "soccer_away_team_totals":
     case "soccer_team_totals":
     case "both_teams_to_score":
+      return "入球大細";
     case "soccer_first_to_score":
     case "soccer_anytime_goalscorer":
+      return "首名入球";
     case "soccer_player_goals":
     case "soccer_player_goals_plus_assists":
-      return "Goals";
+      return "球員表現";
     case "correct_score":
     case "soccer_exact_score":
-      return "Exact Score";
+      return "波膽";
     case "total_corners":
     case "soccer_first_corner":
     case "soccer_first_half_total_corners":
     case "soccer_second_half_total_corners":
     case "soccer_team_total_corners":
     case "soccer_game_corners_odd_even":
-      return "Corners";
+      return "其他";
     case "soccer_player_assists":
-      return "Assists";
-    case "soccer_player_shots":
-    case "soccer_player_shots_on_target":
-      return "Shots";
     case "player_prop":
-    case "soccer_player_assists":
     case "soccer_player_goalkeeper_saves":
-    case "soccer_player_goals":
-    case "soccer_player_goals_plus_assists":
     case "soccer_player_shots":
     case "soccer_player_shots_on_target":
       return "球員表現";
@@ -288,7 +290,7 @@ function optionFromMarket(
   market: PolymarketMarket,
   match: Match
 ): BetOption[] {
-  if (!market.active || market.closed) return [];
+  if (market.active === false || market.closed) return [];
 
   const outcomes = parseJsonArray(market.outcomes);
   const prices = parseJsonArray(market.outcomePrices);
@@ -353,18 +355,24 @@ async function fetchSupplementalMarkets(matches: Match[]) {
   const responses = await Promise.all(
     ranges.flatMap((range) =>
       SUPPLEMENTAL_MARKET_TYPES.map(async (marketType) => {
-        const url = new URL("https://gamma-api.polymarket.com/markets/keyset");
-        url.searchParams.set("closed", "false");
-        url.searchParams.set("limit", "100");
-        url.searchParams.set("sports_market_types", marketType);
-        url.searchParams.set("end_date_min", range.start);
-        url.searchParams.set("end_date_max", range.end);
+        try {
+          const url = new URL("https://gamma-api.polymarket.com/markets/keyset");
+          url.searchParams.set("closed", "false");
+          url.searchParams.set("limit", "100");
+          url.searchParams.set("sports_market_types", marketType);
+          url.searchParams.set("end_date_min", range.start);
+          url.searchParams.set("end_date_max", range.end);
 
-        const response = await fetch(url, { next: { revalidate: 60 } });
-        if (!response.ok) return [];
+          const response = await fetch(url, { next: { revalidate: 60 } });
+          if (!response.ok) return [];
 
-        const data = (await response.json()) as { markets?: PolymarketMarket[] };
-        return data.markets ?? [];
+          const data = (await response.json()) as {
+            markets?: PolymarketMarket[];
+          };
+          return data.markets ?? [];
+        } catch {
+          return [];
+        }
       })
     )
   );

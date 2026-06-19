@@ -7,15 +7,12 @@ export const dynamic = "force-dynamic";
 export default async function MatchesPage() {
   const { matches } = await getAllMatches();
   const now = new Date();
+  const last24Hours = new Date(now.getTime() - 24 * 60 * 60 * 1000);
   const hkToday = formatHKTime(now, "yyyy-MM-dd");
-  const hkYesterday = formatHKTime(
-    new Date(now.getTime() - 24 * 60 * 60 * 1000),
-    "yyyy-MM-dd"
-  );
 
-  const yesterdayResults = matches.filter((m) => {
-    const matchDate = formatHKTime(m.kickoff_time, "yyyy-MM-dd");
-    return matchDate === hkYesterday && m.status === "FINISHED";
+  const recentResults = matches.filter((m) => {
+    const kickoff = new Date(m.kickoff_time);
+    return kickoff >= last24Hours && kickoff <= now && m.status === "FINISHED";
   });
   const upcoming = matches.filter((m) =>
     ["SCHEDULED", "TIMED"].includes(m.status) &&
@@ -29,8 +26,8 @@ export default async function MatchesPage() {
         ⚽ 賽程一覽
       </h1>
 
-      {yesterdayResults.length > 0 && (
-        <Section title="昨日賽果" matches={yesterdayResults} showScore />
+      {recentResults.length > 0 && (
+        <Section title="過去 24 小時賽果" matches={recentResults} showScore />
       )}
       {live.length > 0 && (
         <Section title="比賽中" matches={live} showScore />
