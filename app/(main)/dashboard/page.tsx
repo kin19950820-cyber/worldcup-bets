@@ -11,6 +11,7 @@ import { cn } from "@/lib/utils";
 import Link from "next/link";
 import MatchCountdown from "@/components/matches/MatchCountdown";
 import LoanCard from "@/components/loans/LoanCard";
+import { parseParlay } from "@/lib/parlay";
 
 export const dynamic = "force-dynamic";
 
@@ -23,11 +24,17 @@ export default async function DashboardPage() {
     pending_stake,
     possible_return,
     total_borrowed,
+    loan_principal,
+    loan_interest,
+    loan_effective_annual_rate,
     recent_bets,
     upcoming_matches,
   } = data;
   const profit =
-    profile.current_balance - profile.starting_fund - total_borrowed;
+    profile.current_balance +
+    pending_stake -
+    profile.starting_fund -
+    total_borrowed;
 
   return (
     <div className="max-w-lg mx-auto px-4 py-6 space-y-6">
@@ -45,7 +52,12 @@ export default async function DashboardPage() {
         </div>
       </div>
 
-      <LoanCard totalBorrowed={total_borrowed} />
+      <LoanCard
+        totalBorrowed={total_borrowed}
+        loanPrincipal={loan_principal}
+        loanInterest={loan_interest}
+        effectiveAnnualRate={loan_effective_annual_rate}
+      />
 
       {/* Stats Row */}
       <div className="grid grid-cols-2 gap-3">
@@ -109,25 +121,38 @@ export default async function DashboardPage() {
           </div>
           <div className="space-y-2">
             {recent_bets.slice(0, 5).map((bet) => {
+              const parlay = parseParlay(bet.selection);
               const match = bet.matches as { home_team: string; away_team: string } | null;
               return (
                 <div key={bet.id} className="card p-4 flex items-center justify-between">
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium text-white truncate">
-                      {match ? `${match.home_team} vs ${match.away_team}` : "—"}
+                      {parlay
+                        ? `${parlay.legs.length} 關過關`
+                        : match
+                        ? `${match.home_team} vs ${match.away_team}`
+                        : "—"}
                     </p>
                     <p className="text-xs text-slate-500 mt-0.5">
-                      {bet.bet_type} · {bet.selection}
+                      {parlay
+                        ? `總賠率 ${bet.odds} · 最高派彩 ${formatCurrency(
+                            bet.possible_return
+                          )}`
+                        : `${bet.bet_type} · ${bet.selection}`}
                     </p>
                   </div>
                   <div className="text-right ml-3 shrink-0">
                     <StatusBadge
-                      status={getSettlementStatus(
-                        bet.status,
-                        bet.payout,
-                        bet.stake,
-                        bet.odds
-                      )}
+                      status={
+                        parlay
+                          ? bet.status
+                          : getSettlementStatus(
+                              bet.status,
+                              bet.payout,
+                              bet.stake,
+                              bet.odds
+                            )
+                      }
                     />
                     <p className="text-xs text-slate-500 mt-1">{formatCurrency(bet.stake)}</p>
                   </div>

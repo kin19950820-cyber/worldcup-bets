@@ -1,6 +1,7 @@
 "use server";
 
 import { createClient, createServiceClient } from "@/lib/supabase/server";
+import { calculateLoanBalance } from "@/lib/loans";
 import type { LeaderboardEntry } from "@/lib/types";
 
 export async function getLeaderboard(): Promise<{ entries: LeaderboardEntry[] }> {
@@ -13,13 +14,13 @@ export async function getLeaderboard(): Promise<{ entries: LeaderboardEntry[] }>
       .select("id, display_name, current_balance, starting_fund"),
     supabase
       .from("bets")
-      .select("user_id, status, stake, payout, odds"),
+      .select("user_id, bet_type, status, stake, payout, odds"),
     service
       .from("transactions")
-      .select("user_id, amount, type")
+      .select("user_id, amount, type, created_at")
       .is("bet_id", null)
-      .in("type", ["loan", "adjustment"])
-      .gt("amount", 0),
+      .in("type", ["loan", "adjustment", "loan_repayment"])
+      .order("created_at", { ascending: true }),
   ]);
 
   const profiles = profilesRes.data ?? [];
@@ -28,21 +29,27 @@ export async function getLeaderboard(): Promise<{ entries: LeaderboardEntry[] }>
 
   const entries: LeaderboardEntry[] = profiles.map((p) => {
     const userBets = bets.filter((b) => b.user_id === p.id);
-    const totalBorrowed = loans
-      .filter((transaction) => transaction.user_id === p.id)
-      .reduce((sum, transaction) => sum + transaction.amount, 0);
-    const netBalance = p.current_balance - totalBorrowed;
+    const totalBorrowed = calculateLoanBalance(
+      loans.filter((transaction) => transaction.user_id === p.id)
+    ).totalOwed;
+    const pendingStake = userBets
+      .filter((bet) => bet.status === "pending")
+      .reduce((sum, bet) => sum + bet.stake, 0);
+    const netBalance = p.current_balance + pendingStake - totalBorrowed;
     const halfWon = userBets.filter(
       (b) =>
         b.status === "half_won" ||
-        (b.status === "won" &&
+        (b.bet_type !== "過關" &&
+          b.status === "won" &&
           Math.abs(b.payout - (b.stake + (b.stake * (b.odds - 1)) / 2)) < 0.01)
     );
     const won = userBets.filter(
       (b) => b.status === "won" && !halfWon.includes(b)
     );
     const halfLost = userBets.filter(
-      (b) => b.status === "half_lost" || (b.status === "lost" && b.payout > 0)
+      (b) =>
+        b.status === "half_lost" ||
+        (b.bet_type !== "過關" && b.status === "lost" && b.payout > 0)
     );
     const lost = userBets.filter(
       (b) => b.status === "lost" && !halfLost.includes(b)
@@ -58,6 +65,7 @@ export async function getLeaderboard(): Promise<{ entries: LeaderboardEntry[] }>
       current_balance: p.current_balance,
       net_balance: netBalance,
       total_borrowed: totalBorrowed,
+      pending_stake: pendingStake,
       starting_fund: p.starting_fund,
       profit_loss: parseFloat((netBalance - p.starting_fund).toFixed(2)),
       total_won: won.length + halfWon.length,

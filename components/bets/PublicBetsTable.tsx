@@ -9,6 +9,7 @@ import {
   cn,
 } from "@/lib/utils";
 import { BET_TYPES } from "@/lib/types";
+import { parseParlay } from "@/lib/parlay";
 
 type BetRow = {
   id: string;
@@ -51,16 +52,17 @@ export default function PublicBetsTable({ initialBets, matches, players }: Props
   const [filterType, setFilterType] = useState("all");
 
   const filtered = initialBets.filter((b) => {
-    const displayStatus = getSettlementStatus(
-      b.status,
-      b.payout,
-      b.stake,
-      b.odds
-    );
+    const parlay = parseParlay(b.selection);
+    const displayStatus = parlay
+      ? b.status
+      : getSettlementStatus(b.status, b.payout, b.stake, b.odds);
 
     if (filterMatch !== "all") {
       const match = matches.find((m) => `${m.home_team} vs ${m.away_team}` === filterMatch);
-      if (match && b.matches?.home_team !== match.home_team) return false;
+      const containsMatch = parlay
+        ? parlay.legs.some((leg) => leg.match_id === match?.id)
+        : b.matches?.home_team === match?.home_team;
+      if (match && !containsMatch) return false;
     }
     if (filterPlayer !== "all" && b.profiles?.display_name !== filterPlayer) return false;
     if (filterStatus !== "all" && displayStatus !== filterStatus) return false;
@@ -132,12 +134,15 @@ export default function PublicBetsTable({ initialBets, matches, players }: Props
       ) : (
         <div className="space-y-2">
           {filtered.map((bet) => {
-            const displayStatus = getSettlementStatus(
-              bet.status,
-              bet.payout,
-              bet.stake,
-              bet.odds
-            );
+            const parlay = parseParlay(bet.selection);
+            const displayStatus = parlay
+              ? bet.status
+              : getSettlementStatus(
+                  bet.status,
+                  bet.payout,
+                  bet.stake,
+                  bet.odds
+                );
 
             return (
             <div key={bet.id} className="card p-4">
@@ -148,13 +153,17 @@ export default function PublicBetsTable({ initialBets, matches, players }: Props
                     <span className="font-semibold text-white text-sm">
                       {bet.profiles?.display_name ?? "—"}
                     </span>
-                    <span className="text-xs text-slate-500">{bet.bet_type}</span>
+                    <span className="text-xs text-slate-500">
+                      {parlay ? `${parlay.legs.length} 關過關` : bet.bet_type}
+                    </span>
                   </div>
                   <p className="text-xs text-slate-400 mt-0.5 truncate">
-                    {bet.matches
+                    {parlay
+                      ? `總賠率 ${bet.odds}`
+                      : bet.matches
                       ? `${bet.matches.home_team} vs ${bet.matches.away_team}`
                       : "—"}
-                    {bet.matches?.kickoff_time &&
+                    {!parlay && bet.matches?.kickoff_time &&
                       ` · ${formatHKTime(bet.matches.kickoff_time, "MM/dd HH:mm")}`}
                   </p>
                 </div>
@@ -169,10 +178,42 @@ export default function PublicBetsTable({ initialBets, matches, players }: Props
               </div>
 
               {/* Selection + odds */}
-              <div className="bg-slate-800/50 rounded-lg p-2.5 mb-2">
-                <span className="text-white text-sm font-medium">{bet.selection}</span>
-                <span className="text-slate-400 text-xs ml-2">@ {bet.odds}</span>
-              </div>
+              {parlay ? (
+                <div className="space-y-2 mb-3">
+                  {parlay.legs.map((leg, index) => (
+                    <div
+                      key={leg.id}
+                      className="bg-slate-800/50 rounded-lg p-2.5 text-xs"
+                    >
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="text-white font-medium">
+                          {index + 1}. {leg.home_team} vs {leg.away_team}
+                        </span>
+                        <span
+                          className={cn(
+                            "shrink-0 rounded-full px-2 py-0.5",
+                            STATUS_COLORS[leg.status] ?? STATUS_COLORS.pending
+                          )}
+                        >
+                          {getStatusLabel(leg.status)}
+                        </span>
+                      </div>
+                      <p className="text-slate-400 mt-1">
+                        {leg.bet_type} · {leg.selection} @ {leg.odds}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="bg-slate-800/50 rounded-lg p-2.5 mb-2">
+                  <span className="text-white text-sm font-medium">
+                    {bet.selection}
+                  </span>
+                  <span className="text-slate-400 text-xs ml-2">
+                    @ {bet.odds}
+                  </span>
+                </div>
+              )}
 
               {/* Financials */}
               <div className="flex items-center gap-4 text-xs">

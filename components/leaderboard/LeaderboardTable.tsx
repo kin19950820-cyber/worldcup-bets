@@ -64,6 +64,11 @@ export default function LeaderboardTable({ entries }: { entries: LeaderboardEntr
                   現金 {formatCurrency(e.current_balance)} · 借款 {formatCurrency(e.total_borrowed)}
                 </p>
               )}
+              {e.pending_stake > 0 && (
+                <p className="text-xs text-yellow-400 mt-0.5">
+                  待結算 {formatCurrency(e.pending_stake)}
+                </p>
+              )}
             </div>
           </div>
 
@@ -76,6 +81,11 @@ export default function LeaderboardTable({ entries }: { entries: LeaderboardEntr
               {e.total_borrowed > 0 && (
                 <span className="block text-xs text-orange-400">
                   借 {formatCurrency(e.total_borrowed)}
+                </span>
+              )}
+              {e.pending_stake > 0 && (
+                <span className="block text-xs text-yellow-400">
+                  待結算 {formatCurrency(e.pending_stake)}
                 </span>
               )}
             </span>

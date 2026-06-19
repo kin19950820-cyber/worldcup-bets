@@ -23,6 +23,7 @@ export type Match = {
 };
 
 export type BetType =
+  | "過關"
   | "讓球"
   | "主客和"
   | "讓球主客和"
@@ -33,6 +34,7 @@ export type BetType =
   | "其他";
 
 export const BET_TYPES: BetType[] = [
+  "過關",
   "讓球",
   "主客和",
   "讓球主客和",
@@ -78,7 +80,8 @@ export type Transaction = {
     | "payout"
     | "refund"
     | "adjustment"
-    | "loan";
+    | "loan"
+    | "loan_repayment";
   amount: number;
   balance_after: number;
   created_at: string;
@@ -90,6 +93,7 @@ export type LeaderboardEntry = {
   current_balance: number;
   net_balance: number;
   total_borrowed: number;
+  pending_stake: number;
   starting_fund: number;
   profit_loss: number;
   total_won: number;
@@ -104,6 +108,10 @@ export type DashboardData = {
   profile: Profile;
   pending_stake: number;
   possible_return: number;
+  total_borrowed: number;
+  loan_principal: number;
+  loan_interest: number;
+  loan_effective_annual_rate: number;
   recent_bets: Bet[];
   upcoming_matches: Match[];
 };
