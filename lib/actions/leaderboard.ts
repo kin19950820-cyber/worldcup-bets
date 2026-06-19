@@ -14,7 +14,7 @@ export async function getLeaderboard(): Promise<{ entries: LeaderboardEntry[] }>
       .select("id, display_name, current_balance, starting_fund"),
     supabase
       .from("bets")
-      .select("user_id, bet_type, status, stake, payout, odds"),
+      .select("user_id, bet_type, status, stake, payout, odds, created_at, settled_at"),
     service
       .from("transactions")
       .select("user_id, amount, type, created_at")
@@ -58,6 +58,15 @@ export async function getLeaderboard(): Promise<{ entries: LeaderboardEntry[] }>
     const pending = userBets.filter((b) => b.status === "pending");
     const settled = won.length + halfWon.length + lost.length + halfLost.length;
     const winScore = won.length + halfWon.length * 0.5;
+    const recentResults = userBets
+      .filter((bet) => bet.status !== "pending")
+      .sort((a, b) => {
+        const aDate = new Date(a.settled_at ?? a.created_at).getTime();
+        const bDate = new Date(b.settled_at ?? b.created_at).getTime();
+        return bDate - aDate;
+      })
+      .slice(0, 10)
+      .map((bet) => bet.status);
 
     return {
       id: p.id,
@@ -76,6 +85,7 @@ export async function getLeaderboard(): Promise<{ entries: LeaderboardEntry[] }>
       total_stake: parseFloat(
         userBets.reduce((s, b) => s + b.stake, 0).toFixed(2)
       ),
+      recent_results: recentResults,
     };
   });
 

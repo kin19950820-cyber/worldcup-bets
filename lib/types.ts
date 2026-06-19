@@ -102,6 +102,7 @@ export type LeaderboardEntry = {
   total_pending: number;
   win_rate: number;
   total_stake: number;
+  recent_results: BetStatus[];
 };
 
 export type DashboardData = {
