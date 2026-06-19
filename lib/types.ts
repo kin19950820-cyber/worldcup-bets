@@ -35,6 +35,13 @@ export type BetType =
   | "晉級"
   | "冠軍"
   | "特別盤"
+  | "Game Lines"
+  | "Exact Score"
+  | "Halves"
+  | "Corners"
+  | "Goals"
+  | "Assists"
+  | "Shots"
   | "其他";
 
 export const BET_TYPES: BetType[] = [
@@ -50,6 +57,13 @@ export const BET_TYPES: BetType[] = [
   "晉級",
   "冠軍",
   "特別盤",
+  "Game Lines",
+  "Exact Score",
+  "Halves",
+  "Corners",
+  "Goals",
+  "Assists",
+  "Shots",
   "其他",
 ];
 
