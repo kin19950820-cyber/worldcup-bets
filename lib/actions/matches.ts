@@ -1,18 +1,21 @@
 "use server";
 
 import { createClient, createServiceClient } from "@/lib/supabase/server";
-import { isMatchClosed } from "@/lib/match-status";
+import { isMatchBettable } from "@/lib/match-status";
 
 export async function getUpcomingMatches() {
   const supabase = await createClient();
+  const cutoff = new Date();
+  cutoff.setHours(cutoff.getHours() - 3);
 
   const { data, error } = await supabase
     .from("matches")
     .select("*")
+    .gte("kickoff_time", cutoff.toISOString())
     .order("kickoff_time", { ascending: true });
 
   if (error) return { matches: [], error: error.message };
-  return { matches: (data ?? []).filter((match) => !isMatchClosed(match.status)) };
+  return { matches: (data ?? []).filter((match) => isMatchBettable(match)) };
 }
 
 export async function getAllMatches() {

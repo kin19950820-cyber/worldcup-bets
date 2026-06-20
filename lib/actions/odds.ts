@@ -641,11 +641,16 @@ export async function getBetOptionsForMatches(matches: Match[]) {
   if (matches.length === 0) return {};
 
   try {
-    let hkjcMatches: HkjcMatch[] = [];
-    for (const oddsTypes of chunks(HKJC_ODDS_TYPES, HKJC_ODDS_BATCH_SIZE)) {
-      const batchMatches = await fetchHkjcFootballMatches(oddsTypes, matches);
-      hkjcMatches = mergeHkjcMatches(hkjcMatches, batchMatches);
-    }
+    const hkjcMatches = (
+      await Promise.all(
+        chunks(HKJC_ODDS_TYPES, HKJC_ODDS_BATCH_SIZE).map((oddsTypes) =>
+          fetchHkjcFootballMatches(oddsTypes, matches)
+        )
+      )
+    ).reduce<HkjcMatch[]>(
+      (merged, batchMatches) => mergeHkjcMatches(merged, batchMatches),
+      []
+    );
 
     const optionsByMatchId: Record<string, BetOption[]> = {};
     for (const match of matches) {

@@ -3,7 +3,7 @@
 import { createClient, createServiceClient } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
 import type { BetType } from "@/lib/types";
-import { isMatchClosed } from "@/lib/match-status";
+import { isMatchBettable } from "@/lib/match-status";
 import {
   getParlayPossibleReturn,
   PARLAY_BET_TYPE,
@@ -37,7 +37,6 @@ export async function createBet(formData: FormData) {
   if (isNaN(odds) || odds <= 1) return { error: "賠率必須大於 1" };
   if (isNaN(stake) || stake <= 0) return { error: "投注額必須大於 0" };
 
-  // Allow betting until the match is truly closed.
   const { data: match, error: matchErr } = await supabase
     .from("matches")
     .select("kickoff_time, status, home_team, away_team")
@@ -45,7 +44,9 @@ export async function createBet(formData: FormData) {
     .single();
 
   if (matchErr || !match) return { error: "找不到此賽事" };
-  if (isMatchClosed(match.status)) return { error: "此賽事已完結，不能投注" };
+  if (!isMatchBettable(match)) {
+    return { error: "此賽事已超過開賽 3 小時，不能投注" };
+  }
 
   // Check balance
   const { data: profile } = await supabase
@@ -173,10 +174,10 @@ export async function createParlay(legsInput: ParlayLegInput[], stakeInput: numb
 
   const invalidMatch = legs.find((leg) => {
     const match = matchMap.get(leg.match_id)!;
-    return isMatchClosed(match.status);
+    return !isMatchBettable(match);
   });
   if (invalidMatch) {
-    return { error: `${invalidMatch.home_team} 對 ${invalidMatch.away_team} 已完結，不能投注` };
+    return { error: `${invalidMatch.home_team} 對 ${invalidMatch.away_team} 已超過開賽 3 小時，不能投注` };
   }
 
   const totalOdds = Math.round(
