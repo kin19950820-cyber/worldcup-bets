@@ -336,7 +336,37 @@ function hkjcTeamNames(team: HkjcMatch["homeTeam"]) {
   return [team?.name_en, team?.name_ch].filter(Boolean).map(String);
 }
 
-function hkjcMatchMatchesLocalMatch(hkjcMatch: HkjcMatch, match: Match) {
+function hkjcMatchKickoffTime(hkjcMatch: HkjcMatch) {
+  const matchDate = hkjcMatch.matchDate?.trim();
+  const kickOffTime = hkjcMatch.kickOffTime?.trim();
+  if (!matchDate || !kickOffTime) return null;
+
+  const candidates = [
+    `${matchDate}T${kickOffTime}`,
+    `${matchDate} ${kickOffTime}`,
+    `${matchDate}T${kickOffTime}+08:00`,
+    `${matchDate} ${kickOffTime}+08:00`,
+  ];
+
+  for (const candidate of candidates) {
+    const time = new Date(candidate).getTime();
+    if (Number.isFinite(time)) return time;
+  }
+
+  return null;
+}
+
+function kickoffTimesAreClose(hkjcMatch: HkjcMatch, match: Match) {
+  const hkjcKickoff = hkjcMatchKickoffTime(hkjcMatch);
+  const localKickoff = new Date(match.kickoff_time).getTime();
+
+  if (!hkjcKickoff || !Number.isFinite(localKickoff)) return false;
+
+  const threeHours = 3 * 60 * 60 * 1000;
+  return Math.abs(hkjcKickoff - localKickoff) <= threeHours;
+}
+
+function hkjcTeamMatchDetails(hkjcMatch: HkjcMatch, match: Match) {
   const homeNames = hkjcTeamNames(hkjcMatch.homeTeam).map(normalizeName);
   const awayNames = hkjcTeamNames(hkjcMatch.awayTeam).map(normalizeName);
   const localHomeNames = teamNames(match.home_team);
@@ -355,7 +385,37 @@ function hkjcMatchMatchesLocalMatch(hkjcMatch: HkjcMatch, match: Match) {
     )
   );
 
+  return { homeMatches, awayMatches };
+}
+
+function hkjcMatchMatchesLocalMatch(hkjcMatch: HkjcMatch, match: Match) {
+  const { homeMatches, awayMatches } = hkjcTeamMatchDetails(hkjcMatch, match);
+
   return homeMatches && awayMatches;
+}
+
+function hkjcMatchFallbackMatchesLocalMatch(
+  hkjcMatch: HkjcMatch,
+  match: Match
+) {
+  const { homeMatches, awayMatches } = hkjcTeamMatchDetails(hkjcMatch, match);
+
+  return (homeMatches || awayMatches) && kickoffTimesAreClose(hkjcMatch, match);
+}
+
+function matchingHkjcMatchesForLocalMatch(
+  hkjcMatches: HkjcMatch[],
+  match: Match
+) {
+  const strictMatches = hkjcMatches.filter((hkjcMatch) =>
+    hkjcMatchMatchesLocalMatch(hkjcMatch, match)
+  );
+
+  if (strictMatches.length > 0) return strictMatches;
+
+  return hkjcMatches.filter((hkjcMatch) =>
+    hkjcMatchFallbackMatchesLocalMatch(hkjcMatch, match)
+  );
 }
 
 function chunks<T>(items: T[], size: number) {
@@ -666,8 +726,9 @@ export async function getBetOptionsForMatches(matches: Match[]) {
 
     const optionsByMatchId: Record<string, BetOption[]> = {};
     for (const match of matches) {
-      const matchingHkjcMatches = hkjcMatches.filter((hkjcMatch) =>
-        hkjcMatchMatchesLocalMatch(hkjcMatch, match)
+      const matchingHkjcMatches = matchingHkjcMatchesForLocalMatch(
+        hkjcMatches,
+        match
       );
       const options = uniqueOptions(
         matchingHkjcMatches.flatMap((hkjcMatch) =>
@@ -721,8 +782,9 @@ export async function getBetOptionsForMatch(
     (merged, batchMatches) => mergeHkjcMatches(merged, batchMatches),
     []
   );
-  const matchingHkjcMatches = hkjcMatches.filter((hkjcMatch) =>
-    hkjcMatchMatchesLocalMatch(hkjcMatch, match)
+  const matchingHkjcMatches = matchingHkjcMatchesForLocalMatch(
+    hkjcMatches,
+    match
   );
 
   return uniqueOptions(
