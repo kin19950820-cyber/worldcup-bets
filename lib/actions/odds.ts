@@ -685,11 +685,13 @@ export async function getBetOptionsForMatches(matches: Match[]) {
 
 export async function getBetOptionsForMatch(
   matchId: string,
-  betType: BetOption["bet_type"]
+  betType?: BetOption["bet_type"]
 ) {
-  if (!matchId || !betType) return [];
+  if (!matchId) return [];
 
-  const oddsTypes = ODDS_TYPES_BY_BET_TYPE[betType] ?? HKJC_ODDS_TYPES;
+  const oddsTypes = betType
+    ? ODDS_TYPES_BY_BET_TYPE[betType] ?? HKJC_ODDS_TYPES
+    : HKJC_ODDS_TYPES;
   const supabase = await createClient();
   const { data: match, error } = await supabase
     .from("matches")
@@ -720,6 +722,10 @@ export async function getBetOptionsForMatch(
       )
     )
   )
-    .filter((option) => option.bet_type === betType)
-    .sort((a, b) => a.selection.localeCompare(b.selection));
+    .filter((option) => (betType ? option.bet_type === betType : true))
+    .sort((a, b) =>
+      a.bet_type === b.bet_type
+        ? a.selection.localeCompare(b.selection)
+        : a.bet_type.localeCompare(b.bet_type)
+    );
 }

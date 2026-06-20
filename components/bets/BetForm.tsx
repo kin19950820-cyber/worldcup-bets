@@ -57,8 +57,10 @@ export default function BetForm({
   const [matchId, setMatchId] = useState("");
   const [optionId, setOptionId] = useState("");
   const [legs, setLegs] = useState<EditableLeg[]>([newLeg(), newLeg()]);
-  const [oddsOptionsByKey, setOddsOptionsByKey] = useState<Record<string, BetOption[]>>({});
-  const [loadingOddsKeys, setLoadingOddsKeys] = useState<string[]>([]);
+  const [oddsOptionsByMatchId, setOddsOptionsByMatchId] = useState<
+    Record<string, BetOption[]>
+  >({});
+  const [loadingMatchIds, setLoadingMatchIds] = useState<string[]>([]);
 
   const stakeNum = Number(stake) || 0;
   const singleOdds = Number(odds) || 0;
@@ -76,47 +78,56 @@ export default function BetForm({
       : 0;
   const visibleMatches = showAllMatches ? matches : matches.slice(0, 5);
   const availableBetTypes = SINGLE_BET_TYPES;
-  const oddsKey = (selectedMatchId: string, selectedBetType: string) =>
-    `${selectedMatchId}:${selectedBetType}`;
   const selectedMatchOptions =
-    matchId && betType ? oddsOptionsByKey[oddsKey(matchId, betType)] ?? [] : [];
-  const isLoadingOdds = (selectedMatchId: string, selectedBetType: string) =>
-    loadingOddsKeys.includes(oddsKey(selectedMatchId, selectedBetType));
-  const loadOddsOptions = async (
-    selectedMatchId: string,
-    selectedBetType: Exclude<BetType, "過關"> | ""
-  ) => {
-    if (!selectedMatchId || !selectedBetType) return;
+    matchId ? oddsOptionsByMatchId[matchId] ?? [] : [];
+  const isLoadingMatchOdds = (selectedMatchId: string) =>
+    loadingMatchIds.includes(selectedMatchId);
+  const loadMatchOddsOptions = async (selectedMatchId: string) => {
+    if (!selectedMatchId) return;
 
-    const key = oddsKey(selectedMatchId, selectedBetType);
-    if (oddsOptionsByKey[key] || loadingOddsKeys.includes(key)) return;
+    if (
+      oddsOptionsByMatchId[selectedMatchId] ||
+      loadingMatchIds.includes(selectedMatchId)
+    ) {
+      return;
+    }
 
-    setLoadingOddsKeys((current) => [...current, key]);
+    setLoadingMatchIds((current) => [...current, selectedMatchId]);
     try {
-      const options = await getBetOptionsForMatch(selectedMatchId, selectedBetType);
-      setOddsOptionsByKey((current) => ({ ...current, [key]: options }));
+      const options = await getBetOptionsForMatch(selectedMatchId);
+      setOddsOptionsByMatchId((current) => ({
+        ...current,
+        [selectedMatchId]: options,
+      }));
     } catch {
       toast.error("暫時載入唔到 HKJC 賠率，可手動輸入");
-      setOddsOptionsByKey((current) => ({ ...current, [key]: [] }));
+      setOddsOptionsByMatchId((current) => ({
+        ...current,
+        [selectedMatchId]: [],
+      }));
     } finally {
-      setLoadingOddsKeys((current) => current.filter((item) => item !== key));
+      setLoadingMatchIds((current) =>
+        current.filter((item) => item !== selectedMatchId)
+      );
     }
   };
   const filteredSingleOptions = betType
-    ? selectedMatchOptions
+    ? selectedMatchOptions.filter((option) => option.bet_type === betType)
     : [];
   const getFilteredOptions = (selectedMatchId: string, selectedBetType: string) =>
     selectedMatchId && selectedBetType
-      ? oddsOptionsByKey[oddsKey(selectedMatchId, selectedBetType)] ?? []
+      ? (oddsOptionsByMatchId[selectedMatchId] ?? []).filter(
+          (option) => option.bet_type === selectedBetType
+        )
       : [];
 
   useEffect(() => {
-    void loadOddsOptions(matchId, betType);
-  }, [matchId, betType]);
+    void loadMatchOddsOptions(matchId);
+  }, [matchId]);
 
   useEffect(() => {
     legs.forEach((leg) => {
-      void loadOddsOptions(leg.match_id, leg.bet_type);
+      void loadMatchOddsOptions(leg.match_id);
     });
   }, [legs]);
 
@@ -300,7 +311,7 @@ export default function BetForm({
             options={filteredSingleOptions}
             value={optionId}
             onChange={applySingleOption}
-            loading={Boolean(matchId && betType && isLoadingOdds(matchId, betType))}
+            loading={Boolean(matchId && betType && isLoadingMatchOdds(matchId))}
             ready={Boolean(matchId && betType)}
           />
 
@@ -437,7 +448,7 @@ export default function BetForm({
                   loading={Boolean(
                     leg.match_id &&
                       leg.bet_type &&
-                      isLoadingOdds(leg.match_id, leg.bet_type)
+                      isLoadingMatchOdds(leg.match_id)
                   )}
                   ready={Boolean(leg.match_id && leg.bet_type)}
                 />
