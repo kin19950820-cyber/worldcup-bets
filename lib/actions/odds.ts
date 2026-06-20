@@ -299,6 +299,16 @@ const BET_TYPE_BY_HKJC_ODDS_TYPE: Record<
 const TEAM_ALIASES: Record<string, string[]> = {
   USA: ["United States", "USMNT", "美國"],
   "United States": ["USA", "USMNT", "美國"],
+  Germany: ["Deutschland", "德國"],
+  "Ivory Coast": [
+    "Cote d'Ivoire",
+    "Côte d'Ivoire",
+    "Côte d’Ivoire",
+    "Republic of Côte d'Ivoire",
+    "科特迪瓦",
+  ],
+  "Cote d'Ivoire": ["Ivory Coast", "Côte d'Ivoire", "科特迪瓦"],
+  "Côte d'Ivoire": ["Ivory Coast", "Cote d'Ivoire", "科特迪瓦"],
   "Korea Republic": ["South Korea", "南韓", "韓國"],
   "South Korea": ["Korea Republic", "南韓", "韓國"],
   "IR Iran": ["Iran", "伊朗"],
