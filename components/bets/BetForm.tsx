@@ -61,6 +61,7 @@ export default function BetForm({
     Record<string, BetOption[]>
   >({});
   const [loadingMatchIds, setLoadingMatchIds] = useState<string[]>([]);
+  const [loadingMarketKeys, setLoadingMarketKeys] = useState<string[]>([]);
 
   const stakeNum = Number(stake) || 0;
   const singleOdds = Number(odds) || 0;
@@ -82,6 +83,31 @@ export default function BetForm({
     matchId ? oddsOptionsByMatchId[matchId] ?? [] : [];
   const isLoadingMatchOdds = (selectedMatchId: string) =>
     loadingMatchIds.includes(selectedMatchId);
+  const marketKey = (selectedMatchId: string, selectedBetType: string) =>
+    `${selectedMatchId}:${selectedBetType}`;
+  const isLoadingMarketOdds = (
+    selectedMatchId: string,
+    selectedBetType: string
+  ) => loadingMarketKeys.includes(marketKey(selectedMatchId, selectedBetType));
+  const mergeMatchOptions = (selectedMatchId: string, options: BetOption[]) => {
+    setOddsOptionsByMatchId((current) => {
+      const merged = new Map(
+        [...(current[selectedMatchId] ?? []), ...options].map((option) => [
+          option.id,
+          option,
+        ])
+      );
+
+      return {
+        ...current,
+        [selectedMatchId]: Array.from(merged.values()).sort((a, b) =>
+          a.bet_type === b.bet_type
+            ? a.selection.localeCompare(b.selection)
+            : a.bet_type.localeCompare(b.bet_type)
+        ),
+      };
+    });
+  };
   const loadMatchOddsOptions = async (selectedMatchId: string) => {
     if (!selectedMatchId) return;
 
@@ -95,19 +121,43 @@ export default function BetForm({
     setLoadingMatchIds((current) => [...current, selectedMatchId]);
     try {
       const options = await getBetOptionsForMatch(selectedMatchId);
-      setOddsOptionsByMatchId((current) => ({
-        ...current,
-        [selectedMatchId]: options,
-      }));
+      mergeMatchOptions(selectedMatchId, options);
     } catch {
       toast.error("暫時載入唔到 HKJC 賠率，可手動輸入");
-      setOddsOptionsByMatchId((current) => ({
-        ...current,
-        [selectedMatchId]: [],
-      }));
     } finally {
       setLoadingMatchIds((current) =>
         current.filter((item) => item !== selectedMatchId)
+      );
+    }
+  };
+  const loadMarketOddsOptions = async (
+    selectedMatchId: string,
+    selectedBetType: Exclude<BetType, "過關"> | ""
+  ) => {
+    if (!selectedMatchId || !selectedBetType) return;
+    if (
+      (oddsOptionsByMatchId[selectedMatchId] ?? []).some(
+        (option) => option.bet_type === selectedBetType
+      )
+    ) {
+      return;
+    }
+
+    const key = marketKey(selectedMatchId, selectedBetType);
+    if (loadingMarketKeys.includes(key)) return;
+
+    setLoadingMarketKeys((current) => [...current, key]);
+    try {
+      const options = await getBetOptionsForMatch(
+        selectedMatchId,
+        selectedBetType
+      );
+      mergeMatchOptions(selectedMatchId, options);
+    } catch {
+      toast.error("暫時載入唔到 HKJC 賠率，可手動輸入");
+    } finally {
+      setLoadingMarketKeys((current) =>
+        current.filter((item) => item !== key)
       );
     }
   };
@@ -126,8 +176,13 @@ export default function BetForm({
   }, [matchId]);
 
   useEffect(() => {
+    void loadMarketOddsOptions(matchId, betType);
+  }, [matchId, betType]);
+
+  useEffect(() => {
     legs.forEach((leg) => {
       void loadMatchOddsOptions(leg.match_id);
+      void loadMarketOddsOptions(leg.match_id, leg.bet_type);
     });
   }, [legs]);
 
@@ -311,7 +366,12 @@ export default function BetForm({
             options={filteredSingleOptions}
             value={optionId}
             onChange={applySingleOption}
-            loading={Boolean(matchId && betType && isLoadingMatchOdds(matchId))}
+            loading={Boolean(
+              matchId &&
+                betType &&
+                (isLoadingMatchOdds(matchId) ||
+                  isLoadingMarketOdds(matchId, betType))
+            )}
             ready={Boolean(matchId && betType)}
           />
 
@@ -448,7 +508,8 @@ export default function BetForm({
                   loading={Boolean(
                     leg.match_id &&
                       leg.bet_type &&
-                      isLoadingMatchOdds(leg.match_id)
+                      (isLoadingMatchOdds(leg.match_id) ||
+                        isLoadingMarketOdds(leg.match_id, leg.bet_type))
                   )}
                   ready={Boolean(leg.match_id && leg.bet_type)}
                 />
