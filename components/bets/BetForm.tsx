@@ -1,19 +1,19 @@
 "use client";
 
-import { useMemo, useState, useTransition } from "react";
+import { useEffect, useMemo, useState, useTransition } from "react";
 import toast from "react-hot-toast";
 import {
   createBet,
   createParlay,
   type ParlayLegInput,
 } from "@/lib/actions/bets";
+import { getBetOptionsForMatch } from "@/lib/actions/odds";
 import { BET_TYPES, type BetOption, type BetType, type Match } from "@/lib/types";
 import { formatCurrency, formatHKTime, cn } from "@/lib/utils";
 
 interface BetFormProps {
   matches: Match[];
   currentBalance: number;
-  oddsOptionsByMatchId: Record<string, BetOption[]>;
 }
 
 type Mode = "single" | "parlay";
@@ -46,10 +46,10 @@ function newLeg(): EditableLeg {
 export default function BetForm({
   matches,
   currentBalance,
-  oddsOptionsByMatchId,
 }: BetFormProps) {
   const [mode, setMode] = useState<Mode>("single");
   const [pending, startTransition] = useTransition();
+  const [showAllMatches, setShowAllMatches] = useState(false);
   const [stake, setStake] = useState("");
   const [betType, setBetType] = useState<Exclude<BetType, "過關"> | "">("");
   const [selection, setSelection] = useState("");
@@ -57,6 +57,8 @@ export default function BetForm({
   const [matchId, setMatchId] = useState("");
   const [optionId, setOptionId] = useState("");
   const [legs, setLegs] = useState<EditableLeg[]>([newLeg(), newLeg()]);
+  const [oddsOptionsByKey, setOddsOptionsByKey] = useState<Record<string, BetOption[]>>({});
+  const [loadingOddsKeys, setLoadingOddsKeys] = useState<string[]>([]);
 
   const stakeNum = Number(stake) || 0;
   const singleOdds = Number(odds) || 0;
@@ -72,23 +74,51 @@ export default function BetForm({
     stakeNum > 0
       ? stakeNum * (mode === "single" ? singleOdds : totalOdds)
       : 0;
-  const selectedMatchOptions = matchId ? oddsOptionsByMatchId[matchId] ?? [] : [];
-  const availableBetTypes = useMemo(() => {
-    const fetchedTypes = Object.values(oddsOptionsByMatchId)
-      .flat()
-      .map((option) => option.bet_type);
+  const visibleMatches = showAllMatches ? matches : matches.slice(0, 5);
+  const availableBetTypes = SINGLE_BET_TYPES;
+  const oddsKey = (selectedMatchId: string, selectedBetType: string) =>
+    `${selectedMatchId}:${selectedBetType}`;
+  const selectedMatchOptions =
+    matchId && betType ? oddsOptionsByKey[oddsKey(matchId, betType)] ?? [] : [];
+  const isLoadingOdds = (selectedMatchId: string, selectedBetType: string) =>
+    loadingOddsKeys.includes(oddsKey(selectedMatchId, selectedBetType));
+  const loadOddsOptions = async (
+    selectedMatchId: string,
+    selectedBetType: Exclude<BetType, "過關"> | ""
+  ) => {
+    if (!selectedMatchId || !selectedBetType) return;
 
-    return Array.from(new Set([...SINGLE_BET_TYPES, ...fetchedTypes]));
-  }, [oddsOptionsByMatchId]);
+    const key = oddsKey(selectedMatchId, selectedBetType);
+    if (oddsOptionsByKey[key] || loadingOddsKeys.includes(key)) return;
+
+    setLoadingOddsKeys((current) => [...current, key]);
+    try {
+      const options = await getBetOptionsForMatch(selectedMatchId, selectedBetType);
+      setOddsOptionsByKey((current) => ({ ...current, [key]: options }));
+    } catch {
+      toast.error("暫時載入唔到 HKJC 賠率，可手動輸入");
+      setOddsOptionsByKey((current) => ({ ...current, [key]: [] }));
+    } finally {
+      setLoadingOddsKeys((current) => current.filter((item) => item !== key));
+    }
+  };
   const filteredSingleOptions = betType
-    ? selectedMatchOptions.filter((option) => option.bet_type === betType)
+    ? selectedMatchOptions
     : [];
   const getFilteredOptions = (selectedMatchId: string, selectedBetType: string) =>
     selectedMatchId && selectedBetType
-      ? (oddsOptionsByMatchId[selectedMatchId] ?? []).filter(
-          (option) => option.bet_type === selectedBetType
-        )
+      ? oddsOptionsByKey[oddsKey(selectedMatchId, selectedBetType)] ?? []
       : [];
+
+  useEffect(() => {
+    void loadOddsOptions(matchId, betType);
+  }, [matchId, betType]);
+
+  useEffect(() => {
+    legs.forEach((leg) => {
+      void loadOddsOptions(leg.match_id, leg.bet_type);
+    });
+  }, [legs]);
 
   const applySingleOption = (id: string) => {
     setOptionId(id);
@@ -232,7 +262,7 @@ export default function BetForm({
       {mode === "single" ? (
         <form onSubmit={handleSingleSubmit} className="space-y-5">
           <MatchSelect
-            matches={matches}
+            matches={visibleMatches}
             value={matchId}
             onChange={(value) => {
               setMatchId(value);
@@ -270,6 +300,8 @@ export default function BetForm({
             options={filteredSingleOptions}
             value={optionId}
             onChange={applySingleOption}
+            loading={Boolean(matchId && betType && isLoadingOdds(matchId, betType))}
+            ready={Boolean(matchId && betType)}
           />
 
           <SelectionInput value={selection} onChange={setSelection} />
@@ -353,7 +385,7 @@ export default function BetForm({
                   className="form-input appearance-none"
                 >
                   <option value="">選擇賽事</option>
-                  {matches.map((match) => (
+                  {visibleMatches.map((match) => (
                     <option
                       key={match.id}
                       value={match.id}
@@ -402,6 +434,12 @@ export default function BetForm({
                   options={getFilteredOptions(leg.match_id, leg.bet_type)}
                   value={leg.option_id}
                   onChange={(value) => applyLegOption(leg.key, value)}
+                  loading={Boolean(
+                    leg.match_id &&
+                      leg.bet_type &&
+                      isLoadingOdds(leg.match_id, leg.bet_type)
+                  )}
+                  ready={Boolean(leg.match_id && leg.bet_type)}
                 />
 
                 <input
@@ -458,6 +496,15 @@ export default function BetForm({
           />
         </form>
       )}
+      {matches.length > 5 && (
+        <button
+          type="button"
+          onClick={() => setShowAllMatches((current) => !current)}
+          className="btn-secondary w-full py-2.5 text-sm"
+        >
+          {showAllMatches ? "只顯示最近 5 場" : `顯示更多賽事（${matches.length - 5}）`}
+        </button>
+      )}
     </div>
   );
 }
@@ -497,12 +544,30 @@ function OddsOptionSelect({
   options,
   value,
   onChange,
+  loading,
+  ready,
 }: {
   options: BetOption[];
   value: string;
   onChange: (value: string) => void;
+  loading?: boolean;
+  ready?: boolean;
 }) {
-  if (options.length === 0) return null;
+  if (loading) {
+    return (
+      <div className="rounded-xl border border-slate-800 bg-slate-900/60 px-4 py-3 text-sm text-slate-400">
+        正在載入 HKJC 賠率…
+      </div>
+    );
+  }
+
+  if (options.length === 0) {
+    return ready ? (
+      <div className="rounded-xl border border-slate-800 bg-slate-900/60 px-4 py-3 text-sm text-slate-500">
+        暫無 HKJC 市場選項，可手動輸入投注選項和賠率。
+      </div>
+    ) : null;
+  }
 
   return (
     <div>

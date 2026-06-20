@@ -1,5 +1,4 @@
 import { getUpcomingMatches } from "@/lib/actions/matches";
-import { getBetOptionsForMatches } from "@/lib/actions/odds";
 import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import BetForm from "@/components/bets/BetForm";
@@ -15,7 +14,6 @@ export default async function PlaceBetPage() {
     getUpcomingMatches(),
     supabase.from("profiles").select("current_balance").eq("id", user.id).single(),
   ]);
-  const oddsOptionsByMatchId = await getBetOptionsForMatches(matches);
 
   const balance = profileRes.data?.current_balance ?? 0;
 
@@ -34,7 +32,6 @@ export default async function PlaceBetPage() {
         <BetForm
           matches={matches}
           currentBalance={balance}
-          oddsOptionsByMatchId={oddsOptionsByMatchId}
         />
       )}
     </div>

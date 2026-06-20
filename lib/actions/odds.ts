@@ -1,6 +1,9 @@
 "use server";
 
 import type { BetOption, Match } from "@/lib/types";
+import { isMatchBettable } from "@/lib/match-status";
+import { createClient } from "@/lib/supabase/server";
+import { unstable_cache } from "next/cache";
 
 type HkjcOddsType =
   | "HAD"
@@ -125,6 +128,23 @@ const HKJC_ODDS_TYPES: HkjcOddsType[] = [
   "SGA",
   "FHH",
 ];
+
+const ODDS_TYPES_BY_BET_TYPE: Partial<Record<BetOption["bet_type"], HkjcOddsType[]>> = {
+  主客和: ["HAD"],
+  讓球: ["HDC", "FHH"],
+  讓球主客和: ["HHA"],
+  入球大細: ["HIL", "FHL"],
+  入球數: ["TTG"],
+  波膽: ["CRS", "FCS"],
+  半全場: ["HFT"],
+  半場主客和: ["FHA"],
+  首名入球: ["FTS"],
+  角球: ["CHL", "FCH", "FHC", "CHD"],
+  球員表現: ["FGS", "AGS", "LGS", "NTS"],
+  晉級: ["TQL"],
+  冠軍: ["CHP"],
+  特別盤: ["OOE", "MSP", "SGA"],
+};
 
 const HKJC_MATCH_QUERY = `
 query matchList($startIndex: Int, $endIndex: Int, $startDate: String, $endDate: String, $matchIds: [String], $tournIds: [String], $fbOddsTypes: [FBOddsType]!, $fbOddsTypesM: [FBOddsType]!, $inplayOnly: Boolean, $featuredMatchesOnly: Boolean, $frontEndIds: [String], $earlySettlementOnly: Boolean, $showAllMatch: Boolean) {
@@ -326,27 +346,6 @@ function hkjcMatchMatchesLocalMatch(hkjcMatch: HkjcMatch, match: Match) {
   );
 
   return homeMatches && awayMatches;
-}
-
-function hktDate(value: string) {
-  const parts = new Intl.DateTimeFormat("en-CA", {
-    timeZone: "Asia/Hong_Kong",
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-  }).formatToParts(new Date(value));
-  const part = (type: string) =>
-    parts.find((item) => item.type === type)?.value ?? "";
-
-  return `${part("year")}-${part("month")}-${part("day")}`;
-}
-
-function matchDateRange(matches: Match[]) {
-  const dates = matches.map((match) => hktDate(match.kickoff_time)).sort();
-  return {
-    startDate: dates[0] ?? null,
-    endDate: dates[dates.length - 1] ?? null,
-  };
 }
 
 function chunks<T>(items: T[], size: number) {
@@ -554,10 +553,7 @@ function optionFromHkjcPool(
     .filter((option): option is BetOption => option !== null);
 }
 
-async function fetchHkjcFootballMatches(
-  oddsTypes: HkjcOddsType[],
-  matches: Match[]
-) {
+async function fetchHkjcFootballMatchesUncached(oddsTypes: HkjcOddsType[]) {
   const response = await fetch(HKJC_GRAPHQL_ENDPOINT, {
     method: "POST",
     headers: {
@@ -605,6 +601,12 @@ async function fetchHkjcFootballMatches(
   return data.data?.matches ?? [];
 }
 
+const fetchHkjcFootballMatches = unstable_cache(
+  fetchHkjcFootballMatchesUncached,
+  ["hkjc-football-odds"],
+  { revalidate: 60 }
+);
+
 function mergeHkjcMatches(existing: HkjcMatch[], incoming: HkjcMatch[]) {
   const byId = new Map(existing.map((match) => [match.id, match]));
 
@@ -644,7 +646,7 @@ export async function getBetOptionsForMatches(matches: Match[]) {
     const hkjcMatches = (
       await Promise.all(
         chunks(HKJC_ODDS_TYPES, HKJC_ODDS_BATCH_SIZE).map((oddsTypes) =>
-          fetchHkjcFootballMatches(oddsTypes, matches)
+          fetchHkjcFootballMatches(oddsTypes)
         )
       )
     ).reduce<HkjcMatch[]>(
@@ -679,4 +681,45 @@ export async function getBetOptionsForMatches(matches: Match[]) {
     console.warn("HKJC odds fetch failed:", error);
     return {};
   }
+}
+
+export async function getBetOptionsForMatch(
+  matchId: string,
+  betType: BetOption["bet_type"]
+) {
+  if (!matchId || !betType) return [];
+
+  const oddsTypes = ODDS_TYPES_BY_BET_TYPE[betType] ?? HKJC_ODDS_TYPES;
+  const supabase = await createClient();
+  const { data: match, error } = await supabase
+    .from("matches")
+    .select("*")
+    .eq("id", matchId)
+    .single();
+
+  if (error || !match || !isMatchBettable(match)) return [];
+
+  const hkjcMatches = (
+    await Promise.all(
+      chunks(oddsTypes, HKJC_ODDS_BATCH_SIZE).map((chunk) =>
+        fetchHkjcFootballMatches(chunk)
+      )
+    )
+  ).reduce<HkjcMatch[]>(
+    (merged, batchMatches) => mergeHkjcMatches(merged, batchMatches),
+    []
+  );
+  const matchingHkjcMatches = hkjcMatches.filter((hkjcMatch) =>
+    hkjcMatchMatchesLocalMatch(hkjcMatch, match)
+  );
+
+  return uniqueOptions(
+    matchingHkjcMatches.flatMap((hkjcMatch) =>
+      (hkjcMatch.foPools ?? []).flatMap((pool) =>
+        optionFromHkjcPool(match, hkjcMatch, pool)
+      )
+    )
+  )
+    .filter((option) => option.bet_type === betType)
+    .sort((a, b) => a.selection.localeCompare(b.selection));
 }
