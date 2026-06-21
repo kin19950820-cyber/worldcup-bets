@@ -3,6 +3,8 @@ import { formatCurrency, formatHKTime } from "@/lib/utils";
 
 interface FundTrendChartProps {
   points: BalanceHistoryPoint[];
+  title?: string;
+  subtitle?: string;
 }
 
 const CHART_WIDTH = 320;
@@ -10,7 +12,11 @@ const CHART_HEIGHT = 150;
 const PADDING_X = 18;
 const PADDING_Y = 18;
 
-export default function FundTrendChart({ points }: FundTrendChartProps) {
+export default function FundTrendChart({
+  points,
+  title = "資金走勢",
+  subtitle,
+}: FundTrendChartProps) {
   const cleaned = points
     .filter((point) => Number.isFinite(point.balance))
     .slice(-40);
@@ -60,9 +66,9 @@ export default function FundTrendChart({ points }: FundTrendChartProps) {
     <div className="card p-5">
       <div className="mb-4 flex items-start justify-between gap-3">
         <div>
-          <h2 className="text-sm font-semibold text-slate-300">資金走勢</h2>
+          <h2 className="text-sm font-semibold text-slate-300">{title}</h2>
           <p className="mt-1 text-xs text-slate-500">
-            最近 {cleaned.length} 次資金變動
+            {subtitle ?? `最近 ${cleaned.length} 次資金變動`}
           </p>
         </div>
         <div className="text-right">

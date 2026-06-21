@@ -8,10 +8,10 @@ export async function getLeaderboard(): Promise<{ entries: LeaderboardEntry[] }>
   const supabase = await createClient();
   const service = createServiceClient();
 
-  const [profilesRes, betsRes, loansRes] = await Promise.all([
+  const [profilesRes, betsRes, loansRes, historyRes] = await Promise.all([
     supabase
       .from("profiles")
-      .select("id, display_name, current_balance, starting_fund"),
+      .select("id, display_name, current_balance, starting_fund, created_at"),
     supabase
       .from("bets")
       .select("user_id, bet_type, status, stake, payout, odds, created_at, settled_at"),
@@ -21,17 +21,34 @@ export async function getLeaderboard(): Promise<{ entries: LeaderboardEntry[] }>
       .is("bet_id", null)
       .in("type", ["loan", "adjustment", "loan_repayment"])
       .order("created_at", { ascending: true }),
+    service
+      .from("transactions")
+      .select("user_id, balance_after, created_at")
+      .order("created_at", { ascending: true }),
   ]);
 
   const profiles = profilesRes.data ?? [];
   const bets = betsRes.data ?? [];
   const loans = loansRes.data ?? [];
+  const history = historyRes.data ?? [];
 
   const entries: LeaderboardEntry[] = profiles.map((p) => {
     const userBets = bets.filter((b) => b.user_id === p.id);
     const totalBorrowed = calculateLoanBalance(
       loans.filter((transaction) => transaction.user_id === p.id)
     ).totalOwed;
+    const balanceHistory = [
+      {
+        balance: p.starting_fund,
+        created_at: p.created_at,
+      },
+      ...history
+        .filter((transaction) => transaction.user_id === p.id)
+        .map((transaction) => ({
+          balance: transaction.balance_after,
+          created_at: transaction.created_at,
+        })),
+    ];
     const pendingStake = userBets
       .filter((bet) => bet.status === "pending")
       .reduce((sum, bet) => sum + bet.stake, 0);
@@ -86,6 +103,7 @@ export async function getLeaderboard(): Promise<{ entries: LeaderboardEntry[] }>
         userBets.reduce((s, b) => s + b.stake, 0).toFixed(2)
       ),
       recent_results: recentResults,
+      balance_history: balanceHistory,
     };
   });
 

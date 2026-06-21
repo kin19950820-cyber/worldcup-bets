@@ -131,6 +131,7 @@ export type LeaderboardEntry = {
   win_rate: number;
   total_stake: number;
   recent_results: BetStatus[];
+  balance_history: BalanceHistoryPoint[];
 };
 
 export type DashboardData = {

@@ -1,7 +1,9 @@
 "use client";
 
+import { Fragment, useState } from "react";
 import { formatCurrency, formatProfitLoss, cn } from "@/lib/utils";
 import type { BetStatus, LeaderboardEntry } from "@/lib/types";
+import FundTrendChart from "@/components/dashboard/FundTrendChart";
 
 const MEDALS = ["🥇", "🥈", "🥉"];
 const TOP_TITLES = ["神算子", "大軍師", "金靴軍師"];
@@ -79,6 +81,8 @@ function TrendIcons({ results }: { results: BetStatus[] }) {
 }
 
 export default function LeaderboardTable({ entries }: { entries: LeaderboardEntry[] }) {
+  const [selectedEntryId, setSelectedEntryId] = useState<string | null>(null);
+
   if (entries.length === 0) {
     return (
       <div className="card p-12 text-center text-slate-500">
@@ -103,15 +107,19 @@ export default function LeaderboardTable({ entries }: { entries: LeaderboardEntr
 
       {entries.map((e, i) => {
         const rankTitle = getRankTitle(i, entries.length);
+        const isSelected = selectedEntryId === e.id;
+        const toggleTrend = () =>
+          setSelectedEntryId((current) => (current === e.id ? null : e.id));
 
         return (
+          <Fragment key={e.id}>
           <div
-            key={e.id}
             className={cn(
               "card p-4 transition-colors",
               i === 0 && "border-yellow-500/40 bg-yellow-500/5",
               i === 1 && "border-slate-400/40 bg-slate-400/5",
-              i === 2 && "border-amber-600/40 bg-amber-600/5"
+              i === 2 && "border-amber-600/40 bg-amber-600/5",
+              isSelected && "border-brand-500/50 bg-brand-500/5"
             )}
           >
             {/* Mobile layout */}
@@ -122,7 +130,14 @@ export default function LeaderboardTable({ entries }: { entries: LeaderboardEntr
                 </span>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2">
-                    <p className="font-semibold text-white truncate">{e.display_name}</p>
+                    <button
+                      type="button"
+                      onClick={toggleTrend}
+                      aria-expanded={isSelected}
+                      className="truncate text-left font-semibold text-white underline-offset-4 hover:text-brand-300 hover:underline"
+                    >
+                      {e.display_name}
+                    </button>
                     {rankTitle && (
                       <span className="shrink-0 rounded-full border border-brand-500/30 bg-brand-500/10 px-2 py-0.5 text-[10px] font-semibold text-brand-200">
                         {rankTitle}
@@ -166,7 +181,14 @@ export default function LeaderboardTable({ entries }: { entries: LeaderboardEntr
             <div className="hidden md:grid grid-cols-8 items-center">
               <span className="text-xl">{MEDALS[i] ?? `#${i + 1}`}</span>
               <span className="col-span-2 min-w-0">
-                <span className="block truncate font-semibold text-white">{e.display_name}</span>
+                <button
+                  type="button"
+                  onClick={toggleTrend}
+                  aria-expanded={isSelected}
+                  className="block max-w-full truncate text-left font-semibold text-white underline-offset-4 hover:text-brand-300 hover:underline"
+                >
+                  {e.display_name}
+                </button>
                 {rankTitle && (
                   <span className="mt-1 inline-flex rounded-full border border-brand-500/30 bg-brand-500/10 px-2 py-0.5 text-[10px] font-semibold text-brand-200">
                     {rankTitle}
@@ -199,6 +221,14 @@ export default function LeaderboardTable({ entries }: { entries: LeaderboardEntr
               <span className="text-right text-slate-400 text-sm">{formatCurrency(e.total_stake)}</span>
             </div>
           </div>
+          {isSelected && (
+            <FundTrendChart
+              points={e.balance_history}
+              title={`${e.display_name} 資金走勢`}
+              subtitle={`最近 ${e.balance_history.length} 次資金變動`}
+            />
+          )}
+          </Fragment>
         );
       })}
     </div>
