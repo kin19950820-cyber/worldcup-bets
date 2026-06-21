@@ -11,6 +11,7 @@ import { cn } from "@/lib/utils";
 import Link from "next/link";
 import MatchCountdown from "@/components/matches/MatchCountdown";
 import LoanCard from "@/components/loans/LoanCard";
+import FundTrendChart from "@/components/dashboard/FundTrendChart";
 import { parseParlay } from "@/lib/parlay";
 
 export const dynamic = "force-dynamic";
@@ -27,6 +28,7 @@ export default async function DashboardPage() {
     loan_principal,
     loan_interest,
     loan_effective_weekly_rate,
+    balance_history,
     recent_bets,
     upcoming_matches,
   } = data;
@@ -51,6 +53,8 @@ export default async function DashboardPage() {
           {formatProfitLoss(profit)} 盈虧
         </div>
       </div>
+
+      <FundTrendChart points={balance_history} />
 
       <LoanCard
         totalBorrowed={total_borrowed}

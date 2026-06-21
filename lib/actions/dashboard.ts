@@ -8,7 +8,7 @@ export async function getDashboardData() {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return null;
 
-  const [profileRes, betsRes, pendingBetsRes, matchesRes, loansRes] =
+  const [profileRes, betsRes, pendingBetsRes, matchesRes, loansRes, historyRes] =
     await Promise.all([
     supabase.from("profiles").select("*").eq("id", user.id).single(),
     supabase
@@ -38,6 +38,11 @@ export async function getDashboardData() {
       .is("bet_id", null)
       .in("type", ["loan", "adjustment", "loan_repayment"])
       .order("created_at", { ascending: true }),
+    supabase
+      .from("transactions")
+      .select("balance_after, created_at")
+      .eq("user_id", user.id)
+      .order("created_at", { ascending: true }),
     ]);
 
   const profile = profileRes.data;
@@ -48,6 +53,16 @@ export async function getDashboardData() {
   const pending_stake = pendingBets.reduce((s, b) => s + b.stake, 0);
   const possible_return = pendingBets.reduce((s, b) => s + b.possible_return, 0);
   const loan_balance = calculateLoanBalance(loansRes.data ?? []);
+  const balance_history = [
+    {
+      balance: profile?.starting_fund ?? 0,
+      created_at: profile?.created_at ?? new Date().toISOString(),
+    },
+    ...(historyRes.data ?? []).map((transaction) => ({
+      balance: transaction.balance_after,
+      created_at: transaction.created_at,
+    })),
+  ];
 
   return {
     profile,
@@ -57,6 +72,7 @@ export async function getDashboardData() {
     loan_principal: loan_balance.principal,
     loan_interest: loan_balance.accruedInterest,
     loan_effective_weekly_rate: loan_balance.effectiveWeeklyRate,
+    balance_history,
     recent_bets: recentBets,
     upcoming_matches: upcomingMatches,
   };

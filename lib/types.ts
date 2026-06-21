@@ -110,6 +110,11 @@ export type Transaction = {
   created_at: string;
 };
 
+export type BalanceHistoryPoint = {
+  balance: number;
+  created_at: string;
+};
+
 export type LeaderboardEntry = {
   id: string;
   display_name: string;
@@ -136,6 +141,7 @@ export type DashboardData = {
   loan_principal: number;
   loan_interest: number;
   loan_effective_weekly_rate: number;
+  balance_history: BalanceHistoryPoint[];
   recent_bets: Bet[];
   upcoming_matches: Match[];
 };

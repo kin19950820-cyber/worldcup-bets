@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   formatCurrency,
   formatHKTime,
@@ -45,11 +45,14 @@ const STATUS_COLORS: Record<string, string> = {
   void: "bg-slate-500/20 text-slate-400",
 };
 
+const BETS_PER_PAGE = 20;
+
 export default function PublicBetsTable({ initialBets, matches, players }: Props) {
   const [filterMatch, setFilterMatch] = useState("all");
   const [filterPlayer, setFilterPlayer] = useState("all");
   const [filterStatus, setFilterStatus] = useState("all");
   const [filterType, setFilterType] = useState("all");
+  const [page, setPage] = useState(1);
 
   const filtered = initialBets.filter((b) => {
     const parlay = parseParlay(b.selection);
@@ -69,6 +72,17 @@ export default function PublicBetsTable({ initialBets, matches, players }: Props
     if (filterType !== "all" && b.bet_type !== filterType) return false;
     return true;
   });
+  const totalPages = Math.max(1, Math.ceil(filtered.length / BETS_PER_PAGE));
+  const pageStart = (page - 1) * BETS_PER_PAGE;
+  const visibleBets = filtered.slice(pageStart, pageStart + BETS_PER_PAGE);
+
+  useEffect(() => {
+    setPage(1);
+  }, [filterMatch, filterPlayer, filterStatus, filterType]);
+
+  useEffect(() => {
+    setPage((current) => Math.min(current, totalPages));
+  }, [totalPages]);
 
   return (
     <div className="space-y-4">
@@ -123,7 +137,21 @@ export default function PublicBetsTable({ initialBets, matches, players }: Props
         </button>
       </div>
 
-      <p className="text-slate-500 text-xs">共 {filtered.length} 筆記錄</p>
+      <div className="flex items-center justify-between gap-3 text-xs text-slate-500">
+        <p>
+          共 {filtered.length} 筆記錄
+          {filtered.length > 0 &&
+            ` · 顯示 ${pageStart + 1}-${Math.min(
+              pageStart + visibleBets.length,
+              filtered.length
+            )}`}
+        </p>
+        {totalPages > 1 && (
+          <p>
+            第 {page} / {totalPages} 頁
+          </p>
+        )}
+      </div>
 
       {/* Cards (mobile) / Table rows (desktop) */}
       {filtered.length === 0 ? (
@@ -133,7 +161,7 @@ export default function PublicBetsTable({ initialBets, matches, players }: Props
         </div>
       ) : (
         <div className="space-y-2">
-          {filtered.map((bet) => {
+          {visibleBets.map((bet) => {
             const parlay = parseParlay(bet.selection);
             const displayStatus = parlay
               ? bet.status
@@ -242,6 +270,31 @@ export default function PublicBetsTable({ initialBets, matches, players }: Props
             </div>
             );
           })}
+        </div>
+      )}
+      {totalPages > 1 && (
+        <div className="flex items-center justify-between gap-3">
+          <button
+            type="button"
+            onClick={() => setPage((current) => Math.max(1, current - 1))}
+            disabled={page === 1}
+            className="btn-secondary px-4 py-2 text-sm disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            上一頁
+          </button>
+          <span className="text-xs text-slate-500">
+            每頁 {BETS_PER_PAGE} 筆
+          </span>
+          <button
+            type="button"
+            onClick={() =>
+              setPage((current) => Math.min(totalPages, current + 1))
+            }
+            disabled={page === totalPages}
+            className="btn-secondary px-4 py-2 text-sm disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            下一頁
+          </button>
         </div>
       )}
     </div>
