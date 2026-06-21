@@ -24,6 +24,7 @@ export async function getLeaderboard(): Promise<{ entries: LeaderboardEntry[] }>
     service
       .from("transactions")
       .select("user_id, balance_after, created_at")
+      .neq("type", "stake_deduct")
       .order("created_at", { ascending: true }),
   ]);
 

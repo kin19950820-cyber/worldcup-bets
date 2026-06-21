@@ -42,6 +42,7 @@ export async function getDashboardData() {
       .from("transactions")
       .select("balance_after, created_at")
       .eq("user_id", user.id)
+      .neq("type", "stake_deduct")
       .order("created_at", { ascending: true }),
     ]);
 
