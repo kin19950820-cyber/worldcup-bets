@@ -18,14 +18,16 @@ export default async function AdminSettlePage() {
 
   if (profile?.role !== "admin") redirect("/dashboard");
 
-  const { bets } = await getAllBetsForAdmin("pending");
+  const { bets } = await getAllBetsForAdmin("all");
 
   return (
     <div className="max-w-2xl mx-auto px-4 py-6">
       <h1 className="text-xl font-bold text-white mb-2 flex items-center gap-2">
         ⚖️ 投注結算
       </h1>
-      <p className="text-slate-400 text-sm mb-6">管理員專用 — 處理待結算投注</p>
+      <p className="text-slate-400 text-sm mb-6">
+        管理員專用 — 處理或修正投注結算
+      </p>
       <SettlePanel initialBets={bets} />
     </div>
   );

@@ -57,13 +57,24 @@ type ConfirmState = {
   legId?: string;
   result: SettlementResult;
 } | null;
+type SettleFilter = "pending" | "settled" | "all";
 
 export default function SettlePanel({ initialBets }: { initialBets: BetRow[] }) {
   const [bets, setBets] = useState(initialBets);
   const [pending, startTransition] = useTransition();
   const [confirm, setConfirm] = useState<ConfirmState>(null);
+  const [filter, setFilter] = useState<SettleFilter>("pending");
 
   const pendingBets = bets.filter((bet) => bet.status === "pending");
+  const settledBets = bets.filter((bet) => bet.status !== "pending");
+  const visibleBets =
+    filter === "pending"
+      ? pendingBets
+      : filter === "settled"
+      ? settledBets
+      : bets;
+  const filterLabel =
+    filter === "pending" ? "待結算" : filter === "settled" ? "已結算" : "全部";
 
   const submitSettlement = () => {
     if (!confirm) return;
@@ -115,22 +126,28 @@ export default function SettlePanel({ initialBets }: { initialBets: BetRow[] }) 
     });
   };
 
-  if (pendingBets.length === 0) {
+  if (visibleBets.length === 0) {
     return (
-      <div className="card p-12 text-center text-slate-500">
-        <p className="font-medium">暫無待結算投注</p>
+      <div className="space-y-3">
+        <SettleFilterSelect value={filter} onChange={setFilter} />
+        <div className="card p-12 text-center text-slate-500">
+          <p className="font-medium">暫無{filterLabel}投注</p>
+        </div>
       </div>
     );
   }
 
   return (
     <div className="space-y-3">
-      <p className="text-sm text-slate-400">
-        待結算：<span className="font-bold text-white">{pendingBets.length}</span>{" "}
-        筆
-      </p>
+      <SettleFilterSelect value={filter} onChange={setFilter} />
 
-      {pendingBets.map((bet) => {
+      <div className="grid grid-cols-3 gap-2 text-sm">
+        <CountPill label="待結算" value={pendingBets.length} active={filter === "pending"} />
+        <CountPill label="已結算" value={settledBets.length} active={filter === "settled"} />
+        <CountPill label="全部" value={bets.length} active={filter === "all"} />
+      </div>
+
+      {visibleBets.map((bet) => {
         const parlay = parseParlay(bet.selection);
         return (
           <div key={bet.id} className="card p-4 space-y-4">
@@ -179,18 +196,17 @@ export default function SettlePanel({ initialBets }: { initialBets: BetRow[] }) 
                       <StatusPill status={leg.status} />
                     </div>
 
-                    {leg.status === "pending" && (
-                      <SettlementButtons
-                        disabled={pending}
-                        onSelect={(result) =>
-                          setConfirm({
-                            betId: bet.id,
-                            legId: leg.id,
-                            result,
-                          })
-                        }
-                      />
-                    )}
+                    <SettlementButtons
+                      disabled={pending}
+                      currentStatus={leg.status}
+                      onSelect={(result) =>
+                        setConfirm({
+                          betId: bet.id,
+                          legId: leg.id,
+                          result,
+                        })
+                      }
+                    />
                   </div>
                 ))}
               </div>
@@ -208,6 +224,7 @@ export default function SettlePanel({ initialBets }: { initialBets: BetRow[] }) 
                 </div>
                 <SettlementButtons
                   disabled={pending}
+                  currentStatus={bet.status}
                   onSelect={(result) =>
                     setConfirm({ betId: bet.id, result })
                   }
@@ -256,11 +273,60 @@ function Summary({ label, value }: { label: string; value: string }) {
   );
 }
 
+function SettleFilterSelect({
+  value,
+  onChange,
+}: {
+  value: SettleFilter;
+  onChange: (value: SettleFilter) => void;
+}) {
+  return (
+    <div>
+      <label className="form-label">顯示投注</label>
+      <select
+        value={value}
+        onChange={(event) => onChange(event.target.value as SettleFilter)}
+        className="form-input appearance-none"
+      >
+        <option value="pending">待結算</option>
+        <option value="settled">已結算 / 可修正</option>
+        <option value="all">全部</option>
+      </select>
+    </div>
+  );
+}
+
+function CountPill({
+  label,
+  value,
+  active,
+}: {
+  label: string;
+  value: number;
+  active: boolean;
+}) {
+  return (
+    <div
+      className={cn(
+        "rounded-xl border px-3 py-2 text-center",
+        active
+          ? "border-brand-500/40 bg-brand-500/10 text-white"
+          : "border-slate-800 bg-slate-900/60 text-slate-400"
+      )}
+    >
+      <p className="text-xs">{label}</p>
+      <p className="mt-1 font-bold">{value}</p>
+    </div>
+  );
+}
+
 function SettlementButtons({
   disabled,
+  currentStatus,
   onSelect,
 }: {
   disabled: boolean;
+  currentStatus?: string;
   onSelect: (result: SettlementResult) => void;
 }) {
   return (
@@ -273,10 +339,11 @@ function SettlementButtons({
           onClick={() => onSelect(option.result)}
           className={cn(
             "rounded-lg py-2 text-xs font-semibold text-white disabled:opacity-50",
-            option.className
+            option.className,
+            currentStatus === option.result && "ring-2 ring-white/70"
           )}
         >
-          {option.label}
+          {currentStatus === option.result ? `目前：${option.label}` : option.label}
         </button>
       ))}
     </div>

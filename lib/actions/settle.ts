@@ -11,6 +11,85 @@ import {
 
 type SettlementResult = Exclude<BetStatus, "pending">;
 
+function payoutForResult(
+  stake: number,
+  odds: number,
+  result: SettlementResult
+) {
+  return parseFloat(
+    (result === "won"
+      ? stake * odds
+      : result === "half_won"
+      ? stake + (stake * (odds - 1)) / 2
+      : result === "half_lost"
+      ? stake / 2
+      : result === "void"
+      ? stake
+      : 0
+    ).toFixed(2)
+  );
+}
+
+function transactionTypeForSettlement(
+  result: SettlementResult,
+  delta: number
+) {
+  if (delta < 0) return "adjustment";
+  return result === "void" || result === "half_lost" ? "refund" : "payout";
+}
+
+async function applySettlementBalanceDelta({
+  service,
+  userId,
+  betId,
+  currentBalance,
+  delta,
+  result,
+}: {
+  service: ReturnType<typeof createServiceClient>;
+  userId: string;
+  betId: string;
+  currentBalance: number;
+  delta: number;
+  result: SettlementResult;
+}) {
+  const roundedDelta = Math.round(delta * 100) / 100;
+  const newBalance = Math.round((currentBalance + roundedDelta) * 100) / 100;
+
+  if (roundedDelta === 0) return { newBalance };
+
+  const { data: updatedProfile, error: profileError } = await service
+    .from("profiles")
+    .update({ current_balance: newBalance })
+    .eq("id", userId)
+    .eq("current_balance", currentBalance)
+    .select("current_balance")
+    .single();
+
+  if (profileError || !updatedProfile) {
+    return { error: profileError?.message ?? "玩家餘額剛被更新，請重試" };
+  }
+
+  const { error: transactionError } = await service.from("transactions").insert({
+    user_id: userId,
+    bet_id: betId,
+    type: transactionTypeForSettlement(result, roundedDelta),
+    amount: roundedDelta,
+    balance_after: newBalance,
+  });
+
+  if (transactionError) {
+    await service
+      .from("profiles")
+      .update({ current_balance: currentBalance })
+      .eq("id", userId)
+      .eq("current_balance", newBalance);
+    return { error: transactionError.message };
+  }
+
+  return { newBalance };
+}
+
 export async function settleBet(
   betId: string,
   result: SettlementResult
@@ -29,6 +108,70 @@ export async function settleBet(
     .single();
 
   if (adminProfile?.role !== "admin") return { error: "權限不足" };
+
+  const { data: existingBet } = await service
+    .from("bets")
+    .select("*, profiles(current_balance, display_name)")
+    .eq("id", betId)
+    .single();
+
+  if (!existingBet) return { error: "找不到此投注記錄" };
+
+  if (existingBet.status !== "pending") {
+    const profile = existingBet.profiles as {
+      current_balance: number;
+      display_name: string;
+    };
+    const payout = payoutForResult(existingBet.stake, existingBet.odds, result);
+    const previousPayout = Number(existingBet.payout) || 0;
+    const delta = payout - previousPayout;
+    const { error: betError } = await service
+      .from("bets")
+      .update({
+        status: result,
+        payout,
+        settled_at: new Date().toISOString(),
+      })
+      .eq("id", betId);
+
+    if (betError) return { error: betError.message };
+
+    const balanceResult = await applySettlementBalanceDelta({
+      service,
+      userId: existingBet.user_id,
+      betId,
+      currentBalance: profile.current_balance,
+      delta,
+      result,
+    });
+
+    if ("error" in balanceResult && balanceResult.error) {
+      await service
+        .from("bets")
+        .update({
+          status: existingBet.status,
+          payout: existingBet.payout,
+          settled_at: existingBet.settled_at,
+        })
+        .eq("id", betId);
+      return { error: balanceResult.error };
+    }
+
+    revalidatePath("/admin/settle");
+    revalidatePath("/bets-board");
+    revalidatePath("/dashboard");
+    revalidatePath("/leaderboard");
+
+    return {
+      success: true,
+      changed: true,
+      result,
+      payout,
+      newBalance: balanceResult.newBalance,
+      stake: existingBet.stake,
+      playerName: profile.display_name,
+    };
+  }
 
   const { data, error } = await service.rpc("settle_bet", {
     p_bet_id: betId,
@@ -59,20 +202,8 @@ export async function settleBet(
       current_balance: number;
       display_name: string;
     };
-    const payout = parseFloat(
-      (result === "won"
-        ? bet.stake * bet.odds
-        : result === "half_won"
-        ? bet.stake + (bet.stake * (bet.odds - 1)) / 2
-        : result === "half_lost"
-        ? bet.stake / 2
-        : result === "void"
-        ? bet.stake
-        : 0
-      ).toFixed(2)
-    );
-    const storedStatus =
-      result === "half_won" ? "won" : result === "half_lost" ? "lost" : result;
+    const payout = payoutForResult(bet.stake, bet.odds, result);
+    const storedStatus = result;
     const newBalance = parseFloat((profile.current_balance + payout).toFixed(2));
 
     const { error: betError } = await service
@@ -154,14 +285,12 @@ export async function settleParlayLeg(
     .single();
 
   if (!bet) return { error: "找不到此過關投注" };
-  if (bet.status !== "pending") return { error: "此過關已經結算" };
 
   const payload = parseParlay(bet.selection);
   if (!payload) return { error: "過關資料格式錯誤" };
 
   const leg = payload.legs.find((item) => item.id === legId);
   if (!leg) return { error: "找不到此關" };
-  if (leg.status !== "pending") return { error: "此關已經結算" };
 
   leg.status = result;
   const settlement = getParlaySettlement(bet.stake, payload.legs);
@@ -180,7 +309,7 @@ export async function settleParlayLeg(
     .from("bets")
     .update(updatePayload)
     .eq("id", betId)
-    .eq("status", "pending")
+    .eq("status", bet.status)
     .eq("selection", bet.selection)
     .select("id")
     .single();
@@ -195,56 +324,31 @@ export async function settleParlayLeg(
   };
   let newBalance = profile.current_balance;
 
-  if (settlement.complete && settlement.payout > 0) {
-    newBalance =
-      Math.round((profile.current_balance + settlement.payout) * 100) / 100;
+  if (settlement.complete) {
+    const previousPayout = Number(bet.payout) || 0;
+    const balanceResult = await applySettlementBalanceDelta({
+      service,
+      userId: bet.user_id,
+      betId,
+      currentBalance: profile.current_balance,
+      delta: settlement.payout - previousPayout,
+      result: settlement.status === "pending" ? result : settlement.status,
+    });
 
-    const { data: updatedProfile, error: profileError } = await service
-      .from("profiles")
-      .update({ current_balance: newBalance })
-      .eq("id", bet.user_id)
-      .eq("current_balance", profile.current_balance)
-      .select("current_balance")
-      .single();
-    if (profileError || !updatedProfile) {
+    if ("error" in balanceResult && balanceResult.error) {
       await service
         .from("bets")
         .update({
           selection: bet.selection,
-          status: "pending",
-          payout: 0,
-          settled_at: null,
+          status: bet.status,
+          payout: bet.payout,
+          settled_at: bet.settled_at,
         })
         .eq("id", betId);
-      return { error: profileError?.message ?? "玩家餘額剛被更新，請重試" };
+      return { error: balanceResult.error };
     }
 
-    const { error: transactionError } = await service
-      .from("transactions")
-      .insert({
-        user_id: bet.user_id,
-        bet_id: betId,
-        type: settlement.status === "void" ? "refund" : "payout",
-        amount: settlement.payout,
-        balance_after: newBalance,
-      });
-    if (transactionError) {
-      await service
-        .from("profiles")
-        .update({ current_balance: profile.current_balance })
-        .eq("id", bet.user_id)
-        .eq("current_balance", newBalance);
-      await service
-        .from("bets")
-        .update({
-          selection: bet.selection,
-          status: "pending",
-          payout: 0,
-          settled_at: null,
-        })
-        .eq("id", betId);
-      return { error: transactionError.message };
-    }
+    newBalance = balanceResult.newBalance ?? newBalance;
   }
 
   revalidatePath("/admin/settle");
