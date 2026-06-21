@@ -59,6 +59,9 @@ export default function FundTrendChart({
   const first = cleaned[0];
   const change =
     latest && first ? latest.balance - first.balance : 0;
+  const isNegative = change < 0;
+  const trendColor = isNegative ? "rgb(248 113 113)" : "rgb(16 185 129)";
+  const trendFillId = isNegative ? "fundTrendFillNegative" : "fundTrendFillPositive";
   const high = maxBalance;
   const low = minBalance;
 
@@ -95,9 +98,13 @@ export default function FundTrendChart({
         aria-label="資金走勢圖"
       >
         <defs>
-          <linearGradient id="fundTrendFill" x1="0" x2="0" y1="0" y2="1">
+          <linearGradient id="fundTrendFillPositive" x1="0" x2="0" y1="0" y2="1">
             <stop offset="0%" stopColor="rgb(16 185 129)" stopOpacity="0.32" />
             <stop offset="100%" stopColor="rgb(16 185 129)" stopOpacity="0" />
+          </linearGradient>
+          <linearGradient id="fundTrendFillNegative" x1="0" x2="0" y1="0" y2="1">
+            <stop offset="0%" stopColor="rgb(248 113 113)" stopOpacity="0.32" />
+            <stop offset="100%" stopColor="rgb(248 113 113)" stopOpacity="0" />
           </linearGradient>
         </defs>
         {[0, 1, 2].map((line) => {
@@ -115,11 +122,11 @@ export default function FundTrendChart({
             />
           );
         })}
-        <path d={areaPath} fill="url(#fundTrendFill)" />
+        <path d={areaPath} fill={`url(#${trendFillId})`} />
         <path
           d={path}
           fill="none"
-          stroke="rgb(16 185 129)"
+          stroke={trendColor}
           strokeLinecap="round"
           strokeLinejoin="round"
           strokeWidth="3"
@@ -147,7 +154,7 @@ export default function FundTrendChart({
               cy={y}
               r={index === chartPoints.length - 1 ? 4 : 3}
               fill="rgb(15 23 42)"
-              stroke="rgb(16 185 129)"
+              stroke={trendColor}
               strokeWidth="2"
             />
           );

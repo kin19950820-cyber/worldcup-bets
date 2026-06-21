@@ -4,6 +4,15 @@ import { createClient, createServiceClient } from "@/lib/supabase/server";
 import { calculateLoanBalance } from "@/lib/loans";
 import type { LeaderboardEntry } from "@/lib/types";
 
+const FUND_TREND_TRANSACTION_TYPES = [
+  "initial_fund",
+  "payout",
+  "refund",
+  "loan",
+  "adjustment",
+  "loan_repayment",
+];
+
 export async function getLeaderboard(): Promise<{ entries: LeaderboardEntry[] }> {
   const supabase = await createClient();
   const service = createServiceClient();
@@ -24,7 +33,7 @@ export async function getLeaderboard(): Promise<{ entries: LeaderboardEntry[] }>
     service
       .from("transactions")
       .select("user_id, balance_after, created_at")
-      .neq("type", "stake_deduct")
+      .in("type", FUND_TREND_TRANSACTION_TYPES)
       .order("created_at", { ascending: true }),
   ]);
 

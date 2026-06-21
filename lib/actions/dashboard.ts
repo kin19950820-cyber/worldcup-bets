@@ -3,6 +3,15 @@
 import { createClient } from "@/lib/supabase/server";
 import { calculateLoanBalance } from "@/lib/loans";
 
+const FUND_TREND_TRANSACTION_TYPES = [
+  "initial_fund",
+  "payout",
+  "refund",
+  "loan",
+  "adjustment",
+  "loan_repayment",
+];
+
 export async function getDashboardData() {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
@@ -42,7 +51,7 @@ export async function getDashboardData() {
       .from("transactions")
       .select("balance_after, created_at")
       .eq("user_id", user.id)
-      .neq("type", "stake_deduct")
+      .in("type", FUND_TREND_TRANSACTION_TYPES)
       .order("created_at", { ascending: true }),
     ]);
 
