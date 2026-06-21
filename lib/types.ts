@@ -112,6 +112,8 @@ export type Transaction = {
 
 export type BalanceHistoryPoint = {
   balance: number;
+  net_balance: number;
+  outstanding_loan: number;
   created_at: string;
 };
 

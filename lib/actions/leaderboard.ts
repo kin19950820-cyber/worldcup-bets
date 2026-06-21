@@ -32,7 +32,7 @@ export async function getLeaderboard(): Promise<{ entries: LeaderboardEntry[] }>
       .order("created_at", { ascending: true }),
     service
       .from("transactions")
-      .select("user_id, balance_after, created_at")
+      .select("user_id, amount, type, balance_after, created_at")
       .in("type", FUND_TREND_TRANSACTION_TYPES)
       .order("created_at", { ascending: true }),
   ]);
@@ -50,14 +50,30 @@ export async function getLeaderboard(): Promise<{ entries: LeaderboardEntry[] }>
     const balanceHistory = [
       {
         balance: p.starting_fund,
+        net_balance: p.starting_fund,
+        outstanding_loan: 0,
         created_at: p.created_at,
       },
       ...history
         .filter((transaction) => transaction.user_id === p.id)
-        .map((transaction) => ({
-          balance: transaction.balance_after,
-          created_at: transaction.created_at,
-        })),
+        .map((transaction) => {
+          const outstandingLoan = calculateLoanBalance(
+            loans.filter(
+              (loanTransaction) =>
+                loanTransaction.user_id === p.id &&
+                new Date(loanTransaction.created_at).getTime() <=
+                  new Date(transaction.created_at).getTime()
+            ),
+            new Date(transaction.created_at)
+          ).totalOwed;
+
+          return {
+            balance: transaction.balance_after,
+            net_balance: transaction.balance_after - outstandingLoan,
+            outstanding_loan: outstandingLoan,
+            created_at: transaction.created_at,
+          };
+        }),
     ];
     const pendingStake = userBets
       .filter((bet) => bet.status === "pending")

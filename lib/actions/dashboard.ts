@@ -49,7 +49,7 @@ export async function getDashboardData() {
       .order("created_at", { ascending: true }),
     supabase
       .from("transactions")
-      .select("balance_after, created_at")
+      .select("amount, type, balance_after, created_at")
       .eq("user_id", user.id)
       .in("type", FUND_TREND_TRANSACTION_TYPES)
       .order("created_at", { ascending: true }),
@@ -62,16 +62,32 @@ export async function getDashboardData() {
   const pendingBets = pendingBetsRes.data ?? [];
   const pending_stake = pendingBets.reduce((s, b) => s + b.stake, 0);
   const possible_return = pendingBets.reduce((s, b) => s + b.possible_return, 0);
-  const loan_balance = calculateLoanBalance(loansRes.data ?? []);
+  const loanTransactions = loansRes.data ?? [];
+  const loan_balance = calculateLoanBalance(loanTransactions);
   const balance_history = [
     {
       balance: profile?.starting_fund ?? 0,
+      net_balance: profile?.starting_fund ?? 0,
+      outstanding_loan: 0,
       created_at: profile?.created_at ?? new Date().toISOString(),
     },
-    ...(historyRes.data ?? []).map((transaction) => ({
-      balance: transaction.balance_after,
-      created_at: transaction.created_at,
-    })),
+    ...(historyRes.data ?? []).map((transaction) => {
+      const outstandingLoan = calculateLoanBalance(
+        loanTransactions.filter(
+          (loanTransaction) =>
+            new Date(loanTransaction.created_at).getTime() <=
+            new Date(transaction.created_at).getTime()
+        ),
+        new Date(transaction.created_at)
+      ).totalOwed;
+
+      return {
+        balance: transaction.balance_after,
+        net_balance: transaction.balance_after - outstandingLoan,
+        outstanding_loan: outstandingLoan,
+        created_at: transaction.created_at,
+      };
+    }),
   ];
 
   return {
