@@ -317,6 +317,16 @@ function splitDisplayMarketGroups(options: BetOption[]): MarketGroup[] {
   return groups;
 }
 
+const QUICK_MARKET_TABS = [
+  { key: "全部", label: "全部" },
+  { key: "主客和", label: "主客和" },
+  { key: "讓球", label: "讓球" },
+  { key: "大小球", label: "大小球" },
+  { key: "角球", label: "角球" },
+] as const;
+
+const QUICK_MARKET_KEY_SET = new Set<string>(QUICK_MARKET_TABS.map((t) => t.key));
+
 let nextLegKey = 1;
 
 function newLeg(): EditableLeg {
@@ -372,7 +382,15 @@ export default function BetForm({ matches, currentBalance }: BetFormProps) {
   const singleMarketGroups =
     selectedMarketKey === "全部"
       ? allSingleMarketGroups
-      : allSingleMarketGroups.filter((group) => group.key === selectedMarketKey);
+      : selectedMarketKey === "大小球"
+      ? allSingleMarketGroups.filter((g) => g.type === "入球大細")
+      : selectedMarketKey === "角球"
+      ? allSingleMarketGroups.filter(
+          (g) => g.type === "全場角球" || g.type === "半場角球"
+        )
+      : selectedMarketKey === "主客和" || selectedMarketKey === "讓球"
+      ? allSingleMarketGroups.filter((g) => g.type === selectedMarketKey)
+      : allSingleMarketGroups.filter((g) => g.key === selectedMarketKey);
   const isLoadingMatchOdds = (selectedMatchId: string) =>
     loadingMatchIds.includes(selectedMatchId);
   const marketKey = (selectedMatchId: string, selectedBetType: string) =>
@@ -477,7 +495,7 @@ export default function BetForm({ matches, currentBalance }: BetFormProps) {
 
   useEffect(() => {
     if (
-      selectedMarketKey !== "全部" &&
+      !QUICK_MARKET_KEY_SET.has(selectedMarketKey) &&
       !allSingleMarketGroups.some((group) => group.key === selectedMarketKey)
     ) {
       setSelectedMarketKey("全部");
@@ -604,7 +622,7 @@ export default function BetForm({ matches, currentBalance }: BetFormProps) {
   };
 
   return (
-    <div className="space-y-4 pb-32 lg:pb-0">
+    <div className="space-y-4 pb-52 lg:pb-0">
       <div className="rounded-lg border border-slate-800 bg-slate-950">
         <div className="flex items-center justify-between border-b border-slate-800 px-3 py-2">
           <div>
@@ -737,6 +755,7 @@ export default function BetForm({ matches, currentBalance }: BetFormProps) {
             selection={selection}
             betType={betType}
             odds={singleOdds}
+            oddsString={odds}
             stake={stake}
             setStake={setStake}
             currentBalance={currentBalance}
@@ -750,6 +769,16 @@ export default function BetForm({ matches, currentBalance }: BetFormProps) {
               stakeNum > currentBalance ||
               singleOdds <= 1
             }
+            onSelectionChange={(value) => {
+              setSelection(value);
+              setOptionId("");
+            }}
+            onOddsChange={(value) => {
+              setOdds(value);
+              setOptionId("");
+            }}
+            selectedMarketKey={selectedMarketKey}
+            onMarketChange={setSelectedMarketKey}
           />
         </form>
       ) : (
@@ -967,7 +996,7 @@ function HkjcOddsBoard({
         </div>
       </div>
 
-      <div className="sticky top-14 z-20 border-b border-slate-800 bg-slate-950 p-2 lg:static">
+      <div className="hidden lg:block sticky top-14 z-20 border-b border-slate-800 bg-slate-950 p-2 lg:static">
         <label className="sr-only" htmlFor="hkjc-market-select">
           選擇項目
         </label>
@@ -1044,7 +1073,7 @@ function HkjcOddsBoard({
           </select>
         </div>
 
-        <div className="grid gap-2 sm:grid-cols-[1fr_120px]">
+        <div className="hidden lg:grid gap-2 sm:grid-cols-[1fr_120px]">
           <div>
             <label className="mb-1 block text-xs font-semibold text-slate-400">
               自訂投注選項
@@ -1976,6 +2005,7 @@ function MobileBetslipBar({
   selection,
   betType,
   odds,
+  oddsString,
   legs,
   stake,
   setStake,
@@ -1983,12 +2013,17 @@ function MobileBetslipBar({
   possibleReturn,
   pending,
   disabled,
+  onSelectionChange,
+  onOddsChange,
+  selectedMarketKey,
+  onMarketChange,
 }: {
   mode: Mode;
   selectedMatch?: Match;
   selection?: string;
   betType?: Exclude<BetType, "過關"> | "";
   odds: number;
+  oddsString?: string;
   legs?: EditableLeg[];
   stake: string;
   setStake: (value: string) => void;
@@ -1996,25 +2031,68 @@ function MobileBetslipBar({
   possibleReturn: number;
   pending: boolean;
   disabled: boolean;
+  onSelectionChange?: (value: string) => void;
+  onOddsChange?: (value: string) => void;
+  selectedMarketKey?: string;
+  onMarketChange?: (key: string) => void;
 }) {
   const summary =
     mode === "single"
-      ? selection
-        ? `${betType} · ${selection}`
-        : selectedMatch
+      ? selectedMatch
         ? `${selectedMatch.home_team} 對 ${selectedMatch.away_team}`
-        : "未選擇注項"
+        : "未選擇賽事"
       : `${legs?.filter((leg) => leg.selection).length ?? 0}/${legs?.length ?? 0} 關已選`;
 
   return (
     <div className="fixed inset-x-0 bottom-16 z-30 border-t border-slate-800 bg-slate-950/95 px-3 py-2 shadow-2xl backdrop-blur lg:hidden">
-      <div className="mx-auto max-w-lg">
-        <div className="mb-2 flex items-center justify-between gap-3">
+      <div className="mx-auto max-w-lg space-y-2">
+        {mode === "single" && onMarketChange && selectedMarketKey !== undefined && (
+          <div className="flex gap-1.5 overflow-x-auto pb-0.5">
+            {QUICK_MARKET_TABS.map((tab) => (
+              <button
+                key={tab.key}
+                type="button"
+                onClick={() => onMarketChange(tab.key)}
+                className={cn(
+                  "shrink-0 rounded-full px-3 py-1 text-xs font-semibold transition-colors",
+                  selectedMarketKey === tab.key
+                    ? "bg-emerald-600 text-white"
+                    : "bg-slate-800 text-slate-300 active:bg-slate-700"
+                )}
+              >
+                {tab.label}
+              </button>
+            ))}
+          </div>
+        )}
+        {mode === "single" && onSelectionChange && onOddsChange && (
+          <div className="grid grid-cols-[1fr_88px] gap-2">
+            <input
+              type="text"
+              maxLength={100}
+              value={selection ?? ""}
+              onChange={(event) => onSelectionChange(event.target.value)}
+              className="rounded border border-slate-700 bg-slate-900 px-3 py-2 text-sm text-slate-100 outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20"
+              placeholder="自訂投注選項"
+            />
+            <input
+              type="number"
+              min="1.01"
+              step="0.01"
+              value={oddsString ?? ""}
+              onChange={(event) => onOddsChange(event.target.value)}
+              className="rounded border border-slate-700 bg-slate-900 px-2 text-right text-sm text-slate-100 outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20"
+              placeholder="賠率"
+            />
+          </div>
+        )}
+        <div className="flex items-center justify-between gap-3">
           <div className="min-w-0">
             <p className="truncate text-xs font-semibold text-slate-200">
               {summary}
             </p>
             <p className="text-xs text-slate-500">
+              {mode === "single" && betType && `${betType} · `}
               賠率 {odds > 1 ? odds.toFixed(2) : "--"}
               {possibleReturn > 0 && ` · 派彩 ${formatCurrency(possibleReturn)}`}
             </p>
@@ -2046,7 +2124,7 @@ function MobileBetslipBar({
             ? "提交中"
             : mode === "parlay"
             ? "加入到投注區"
-            : "加入到投注區"}
+            : "確認落注"}
         </button>
       </div>
     </div>
