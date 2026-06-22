@@ -779,6 +779,17 @@ export default function BetForm({ matches, currentBalance }: BetFormProps) {
             }}
             selectedMarketKey={selectedMarketKey}
             onMarketChange={setSelectedMarketKey}
+            allMarketGroups={allSingleMarketGroups}
+            optionGroups={singleMarketGroups}
+            selectedOptionId={optionId}
+            onOptionChange={(id) => {
+              const option = selectedMatchOptions.find((item) => item.id === id);
+              if (option) {
+                chooseSingleOption(option);
+              } else {
+                setOptionId("");
+              }
+            }}
           />
         </form>
       ) : (
@@ -1044,7 +1055,7 @@ function HkjcOddsBoard({
       )}
 
       <div className="border-t border-slate-800 bg-slate-950 p-3">
-        <div className="mb-3">
+        <div className="mb-3 hidden lg:block">
           <label className="mb-1 block text-xs font-semibold text-slate-600">
             市場選項
           </label>
@@ -2017,6 +2028,10 @@ function MobileBetslipBar({
   onOddsChange,
   selectedMarketKey,
   onMarketChange,
+  allMarketGroups,
+  optionGroups,
+  selectedOptionId,
+  onOptionChange,
 }: {
   mode: Mode;
   selectedMatch?: Match;
@@ -2035,6 +2050,10 @@ function MobileBetslipBar({
   onOddsChange?: (value: string) => void;
   selectedMarketKey?: string;
   onMarketChange?: (key: string) => void;
+  allMarketGroups?: MarketGroup[];
+  optionGroups?: MarketGroup[];
+  selectedOptionId?: string;
+  onOptionChange?: (id: string) => void;
 }) {
   const summary =
     mode === "single"
@@ -2064,6 +2083,36 @@ function MobileBetslipBar({
               </button>
             ))}
           </div>
+        )}
+        {mode === "single" && onMarketChange && allMarketGroups && selectedMarketKey !== undefined && (
+          <select
+            value={selectedMarketKey}
+            onChange={(event) => onMarketChange(event.target.value)}
+            className="w-full appearance-none rounded border border-slate-700 bg-slate-900 px-3 py-2 text-sm font-semibold text-slate-100 outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20"
+          >
+            <option value="全部" className="bg-slate-900 text-white">全部</option>
+            {allMarketGroups.map((group) => (
+              <option key={group.key} value={group.key} className="bg-slate-900 text-white">
+                {group.title}
+              </option>
+            ))}
+          </select>
+        )}
+        {mode === "single" && onOptionChange && optionGroups && (
+          <select
+            value={selectedOptionId ?? ""}
+            onChange={(event) => onOptionChange(event.target.value)}
+            className="w-full rounded border border-slate-700 bg-slate-900 px-3 py-2 text-sm text-slate-100 outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20"
+          >
+            <option value="" className="bg-slate-900 text-white">自訂輸入</option>
+            {optionGroups.flatMap((group) =>
+              group.options.map((option) => (
+                <option key={option.id} value={option.id} className="bg-slate-900 text-white">
+                  {group.title} · {displaySelectionLabel(option.selection, group.title) || option.selection} · 賠率 {option.odds.toFixed(2)}
+                </option>
+              ))
+            )}
+          </select>
         )}
         {mode === "single" && onSelectionChange && onOddsChange && (
           <div className="grid grid-cols-[1fr_88px] gap-2">
