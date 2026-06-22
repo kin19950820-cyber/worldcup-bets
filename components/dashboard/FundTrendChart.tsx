@@ -107,7 +107,7 @@ export default function FundTrendChart({
       <div className="relative">
         <svg
           viewBox={`0 0 ${CHART_WIDTH} ${CHART_HEIGHT}`}
-          className="h-40 w-full overflow-visible"
+          className="h-36 w-full overflow-visible sm:h-40"
           role="img"
           aria-label="資金走勢圖"
           onMouseLeave={() => setHoveredIndex(null)}
@@ -181,11 +181,11 @@ export default function FundTrendChart({
           })}
         </svg>
         {activePoint && (
-          <div className="pointer-events-none absolute right-2 top-2 rounded-lg border border-slate-700 bg-slate-950/95 px-3 py-2 text-xs shadow-xl">
-            <p className="font-semibold text-white">
+          <div className="pointer-events-none mt-2 grid grid-cols-2 gap-x-3 gap-y-1 rounded-lg border border-slate-700 bg-slate-950/95 px-3 py-2 text-xs shadow-xl sm:absolute sm:right-2 sm:top-2 sm:mt-0 sm:block">
+            <p className="font-semibold text-white sm:mb-1">
               {formatHKTime(activePoint.created_at, "MM/dd HH:mm")}
             </p>
-            <p className="mt-1 text-slate-300">
+            <p className="text-slate-300 sm:mt-1">
               淨資金 {formatCurrency(activePoint.net_balance)}
             </p>
             <p className="text-slate-500">
