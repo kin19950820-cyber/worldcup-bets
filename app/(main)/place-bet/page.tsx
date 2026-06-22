@@ -18,8 +18,8 @@ export default async function PlaceBetPage() {
   const balance = profileRes.data?.current_balance ?? 0;
 
   return (
-    <div className="max-w-lg mx-auto px-4 py-6">
-      <h1 className="text-xl font-bold text-white mb-6 flex items-center gap-2">
+    <div className="mx-auto max-w-7xl px-3 py-4 sm:px-4 sm:py-6 lg:px-6">
+      <h1 className="mb-4 flex items-center gap-2 text-xl font-bold text-white sm:mb-6">
         ➕ 落注
       </h1>
       {matches.length === 0 ? (
