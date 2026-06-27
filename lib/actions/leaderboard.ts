@@ -4,6 +4,30 @@ import { createClient, createServiceClient } from "@/lib/supabase/server";
 import { calculateLoanBalance } from "@/lib/loans";
 import type { LeaderboardEntry } from "@/lib/types";
 
+// Longest consecutive win/loss streaks from chronologically ordered results.
+// won/half_won count as wins, lost/half_lost as losses; void is neutral and
+// neither extends nor breaks a streak.
+function computeStreaks(statusesAscending: string[]) {
+  let longestWin = 0;
+  let longestLoss = 0;
+  let currentWin = 0;
+  let currentLoss = 0;
+
+  for (const status of statusesAscending) {
+    if (status === "won" || status === "half_won") {
+      currentWin += 1;
+      currentLoss = 0;
+      if (currentWin > longestWin) longestWin = currentWin;
+    } else if (status === "lost" || status === "half_lost") {
+      currentLoss += 1;
+      currentWin = 0;
+      if (currentLoss > longestLoss) longestLoss = currentLoss;
+    }
+  }
+
+  return { longestWin, longestLoss };
+}
+
 const FUND_TREND_TRANSACTION_TYPES = [
   "initial_fund",
   "payout",
@@ -101,15 +125,16 @@ export async function getLeaderboard(): Promise<{ entries: LeaderboardEntry[] }>
     const pending = userBets.filter((b) => b.status === "pending");
     const settled = won.length + halfWon.length + lost.length + halfLost.length;
     const winScore = won.length + halfWon.length * 0.5;
-    const recentResults = userBets
+    const settledAscending = userBets
       .filter((bet) => bet.status !== "pending")
       .sort((a, b) => {
         const aDate = new Date(a.settled_at ?? a.created_at).getTime();
         const bDate = new Date(b.settled_at ?? b.created_at).getTime();
-        return bDate - aDate;
+        return aDate - bDate;
       })
-      .slice(0, 10)
       .map((bet) => bet.status);
+    const { longestWin, longestLoss } = computeStreaks(settledAscending);
+    const recentResults = settledAscending.slice(-10).reverse();
 
     return {
       id: p.id,
@@ -128,6 +153,8 @@ export async function getLeaderboard(): Promise<{ entries: LeaderboardEntry[] }>
       total_stake: parseFloat(
         userBets.reduce((s, b) => s + b.stake, 0).toFixed(2)
       ),
+      longest_win_streak: longestWin,
+      longest_loss_streak: longestLoss,
       recent_results: recentResults,
       balance_history: balanceHistory,
     };

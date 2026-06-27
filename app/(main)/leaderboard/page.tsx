@@ -1,5 +1,6 @@
 import { getLeaderboard } from "@/lib/actions/leaderboard";
 import LeaderboardTable from "@/components/leaderboard/LeaderboardTable";
+import StreakHighlights from "@/components/leaderboard/StreakHighlights";
 
 export const dynamic = "force-dynamic";
 
@@ -11,6 +12,7 @@ export default async function LeaderboardPage() {
       <h1 className="text-xl font-bold text-white mb-6 flex items-center gap-2">
         🏆 龍虎榜
       </h1>
+      <StreakHighlights entries={entries} />
       <LeaderboardTable entries={entries} />
     </div>
   );

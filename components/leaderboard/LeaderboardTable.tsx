@@ -49,6 +49,31 @@ function getRankTitle(index: number, total: number) {
   return null;
 }
 
+function StreakBadges({
+  winStreak,
+  lossStreak,
+}: {
+  winStreak: number;
+  lossStreak: number;
+}) {
+  if (winStreak < 2 && lossStreak < 2) return null;
+
+  return (
+    <span className="mt-1 flex flex-wrap items-center gap-1">
+      {winStreak >= 2 && (
+        <span className="inline-flex items-center rounded-full bg-emerald-500/15 px-1.5 py-0.5 text-[10px] font-semibold text-emerald-300">
+          🔥 {winStreak} 連勝
+        </span>
+      )}
+      {lossStreak >= 2 && (
+        <span className="inline-flex items-center rounded-full bg-red-500/15 px-1.5 py-0.5 text-[10px] font-semibold text-red-300">
+          🥶 {lossStreak} 連敗
+        </span>
+      )}
+    </span>
+  );
+}
+
 function TrendIcons({ results }: { results: BetStatus[] }) {
   const settledResults = results.filter(
     (result): result is Exclude<BetStatus, "pending"> => result !== "pending"
@@ -153,6 +178,10 @@ export default function LeaderboardTable({ entries }: { entries: LeaderboardEntr
                       勝率 {(e.win_rate * 100).toFixed(0)}%
                     </span>
                   </div>
+                  <StreakBadges
+                    winStreak={e.longest_win_streak}
+                    lossStreak={e.longest_loss_streak}
+                  />
                 </div>
                 <div className="text-right shrink-0">
                   <p className="font-bold text-white">{formatCurrency(e.net_balance)}</p>
@@ -194,6 +223,10 @@ export default function LeaderboardTable({ entries }: { entries: LeaderboardEntr
                     {rankTitle}
                   </span>
                 )}
+                <StreakBadges
+                  winStreak={e.longest_win_streak}
+                  lossStreak={e.longest_loss_streak}
+                />
               </span>
               <span className="text-right">
                 <span className="block font-bold text-white">{formatCurrency(e.net_balance)}</span>
