@@ -40,8 +40,8 @@ function classifyBetOutcome(bet: SettlementBet): BetStatus {
 }
 
 // Longest consecutive win/loss streaks from chronologically ordered results.
-// won/half_won count as wins, lost/half_lost as losses; void is neutral and
-// neither extends nor breaks a streak.
+// won/half_won count as wins, lost/half_lost as losses. Anything else (走盤 /
+// void) breaks both streaks so a push interrupts a run rather than bridging it.
 function computeStreaks(statusesAscending: string[]) {
   let longestWin = 0;
   let longestLoss = 0;
@@ -57,6 +57,9 @@ function computeStreaks(statusesAscending: string[]) {
       currentLoss += 1;
       currentWin = 0;
       if (currentLoss > longestLoss) longestLoss = currentLoss;
+    } else {
+      currentWin = 0;
+      currentLoss = 0;
     }
   }
 
@@ -82,7 +85,7 @@ export async function getLeaderboard(): Promise<{ entries: LeaderboardEntry[] }>
       .select("id, display_name, current_balance, starting_fund, created_at"),
     supabase
       .from("bets")
-      .select("user_id, bet_type, status, stake, payout, odds, created_at, settled_at"),
+      .select("id, user_id, bet_type, status, stake, payout, odds, created_at, settled_at"),
     service
       .from("transactions")
       .select("user_id, amount, type, created_at")
@@ -151,9 +154,12 @@ export async function getLeaderboard(): Promise<{ entries: LeaderboardEntry[] }>
     const settledAscending = userBets
       .filter((bet) => bet.status !== "pending")
       .sort((a, b) => {
-        const aDate = new Date(a.settled_at ?? a.created_at).getTime();
-        const bDate = new Date(b.settled_at ?? b.created_at).getTime();
-        return aDate - bDate;
+        // Order by when the bet was placed (a single coherent time basis)
+        // so the result sequence — and the streaks derived from it — reflect
+        // the real chronological order rather than admin settlement clicks.
+        const byCreated =
+          new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
+        return byCreated !== 0 ? byCreated : String(a.id).localeCompare(String(b.id));
       })
       .map((bet) => classifyBetOutcome(bet));
     const { longestWin, longestLoss } = computeStreaks(settledAscending);
