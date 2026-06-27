@@ -2,7 +2,42 @@
 
 import { createClient, createServiceClient } from "@/lib/supabase/server";
 import { calculateLoanBalance } from "@/lib/loans";
-import type { LeaderboardEntry } from "@/lib/types";
+import type { BetStatus, LeaderboardEntry } from "@/lib/types";
+
+type SettlementBet = {
+  bet_type: string;
+  status: string;
+  stake: number;
+  payout: number;
+  odds: number;
+};
+
+// Effective outcome of a settled bet for stats/streak purposes.
+// 過關 (parlay) is judged by its net result: a parlay that does not profit
+// counts as a loss even if no single leg fully lost. Single bets keep the
+// payout-based half-win / half-loss detection.
+function classifyBetOutcome(bet: SettlementBet): BetStatus {
+  if (bet.status === "pending") return "pending";
+
+  if (bet.bet_type === "過關") {
+    if (bet.status === "void") return "void";
+    const diff = bet.payout - bet.stake;
+    if (diff > 0.01) return "won";
+    if (diff < -0.01) return "lost";
+    return "void";
+  }
+
+  if (bet.status === "won") {
+    const halfWinPayout = bet.stake + (bet.stake * (bet.odds - 1)) / 2;
+    return Math.abs(bet.payout - halfWinPayout) < 0.01 ? "half_won" : "won";
+  }
+
+  if (bet.status === "lost") {
+    return bet.payout > 0 ? "half_lost" : "lost";
+  }
+
+  return bet.status as BetStatus;
+}
 
 // Longest consecutive win/loss streaks from chronologically ordered results.
 // won/half_won count as wins, lost/half_lost as losses; void is neutral and
@@ -103,25 +138,13 @@ export async function getLeaderboard(): Promise<{ entries: LeaderboardEntry[] }>
       .filter((bet) => bet.status === "pending")
       .reduce((sum, bet) => sum + bet.stake, 0);
     const netBalance = p.current_balance + pendingStake - totalBorrowed;
-    const halfWon = userBets.filter(
-      (b) =>
-        b.status === "half_won" ||
-        (b.bet_type !== "過關" &&
-          b.status === "won" &&
-          Math.abs(b.payout - (b.stake + (b.stake * (b.odds - 1)) / 2)) < 0.01)
-    );
-    const won = userBets.filter(
-      (b) => b.status === "won" && !halfWon.includes(b)
-    );
+    const won = userBets.filter((b) => classifyBetOutcome(b) === "won");
+    const halfWon = userBets.filter((b) => classifyBetOutcome(b) === "half_won");
+    const lost = userBets.filter((b) => classifyBetOutcome(b) === "lost");
     const halfLost = userBets.filter(
-      (b) =>
-        b.status === "half_lost" ||
-        (b.bet_type !== "過關" && b.status === "lost" && b.payout > 0)
+      (b) => classifyBetOutcome(b) === "half_lost"
     );
-    const lost = userBets.filter(
-      (b) => b.status === "lost" && !halfLost.includes(b)
-    );
-    const voidBets = userBets.filter((b) => b.status === "void");
+    const voidBets = userBets.filter((b) => classifyBetOutcome(b) === "void");
     const pending = userBets.filter((b) => b.status === "pending");
     const settled = won.length + halfWon.length + lost.length + halfLost.length;
     const winScore = won.length + halfWon.length * 0.5;
@@ -132,7 +155,7 @@ export async function getLeaderboard(): Promise<{ entries: LeaderboardEntry[] }>
         const bDate = new Date(b.settled_at ?? b.created_at).getTime();
         return aDate - bDate;
       })
-      .map((bet) => bet.status);
+      .map((bet) => classifyBetOutcome(bet));
     const { longestWin, longestLoss } = computeStreaks(settledAscending);
     const recentResults = settledAscending.slice(-10).reverse();
 
