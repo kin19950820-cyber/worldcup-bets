@@ -140,6 +140,8 @@ export type LeaderboardEntry = {
   total_stake: number;
   longest_win_streak: number;
   longest_loss_streak: number;
+  historical_high: number;
+  historical_low: number;
   recent_results: BetStatus[];
   balance_history: BalanceHistoryPoint[];
 };

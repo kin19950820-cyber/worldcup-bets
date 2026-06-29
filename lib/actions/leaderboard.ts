@@ -175,6 +175,13 @@ export async function getLeaderboard(): Promise<{ entries: LeaderboardEntry[] }>
       .map((bet) => classifyBetOutcome(bet));
     const { longestWin, longestLoss } = computeStreaks(settledAscending);
     const recentResults = settledAscending.slice(-10).reverse();
+    const netBalanceHistory = balanceHistory.map((point) => point.net_balance);
+    const historicalHigh = parseFloat(
+      Math.max(...netBalanceHistory, netBalance).toFixed(2)
+    );
+    const historicalLow = parseFloat(
+      Math.min(...netBalanceHistory, netBalance).toFixed(2)
+    );
 
     return {
       id: p.id,
@@ -195,6 +202,8 @@ export async function getLeaderboard(): Promise<{ entries: LeaderboardEntry[] }>
       ),
       longest_win_streak: longestWin,
       longest_loss_streak: longestLoss,
+      historical_high: historicalHigh,
+      historical_low: historicalLow,
       recent_results: recentResults,
       balance_history: balanceHistory,
     };

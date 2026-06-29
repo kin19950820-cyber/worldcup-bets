@@ -200,6 +200,20 @@ export default function LeaderboardTable({ entries }: { entries: LeaderboardEntr
                   )}
                 </div>
               </div>
+              <div className="mt-2 flex items-center gap-4 text-xs">
+                <span className="text-slate-500">
+                  歷史高{" "}
+                  <span className="font-semibold text-emerald-300">
+                    {formatCurrency(e.historical_high)}
+                  </span>
+                </span>
+                <span className="text-slate-500">
+                  歷史低{" "}
+                  <span className="font-semibold text-red-300">
+                    {formatCurrency(e.historical_low)}
+                  </span>
+                </span>
+              </div>
               <div className="mt-3 flex items-center justify-between gap-3 border-t border-slate-800 pt-3">
                 <span className="text-xs text-slate-500">近 10 注</span>
                 <TrendIcons results={e.recent_results} />
@@ -230,6 +244,11 @@ export default function LeaderboardTable({ entries }: { entries: LeaderboardEntr
               </span>
               <span className="text-right">
                 <span className="block font-bold text-white">{formatCurrency(e.net_balance)}</span>
+                <span className="block text-[10px] text-slate-500">
+                  高 <span className="text-emerald-300">{formatCurrency(e.historical_high)}</span>
+                  {" · "}
+                  低 <span className="text-red-300">{formatCurrency(e.historical_low)}</span>
+                </span>
                 {e.total_borrowed > 0 && (
                   <span className="block text-xs text-orange-400">
                     借 {formatCurrency(e.total_borrowed)}
