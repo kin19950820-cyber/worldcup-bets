@@ -104,7 +104,18 @@ export async function getLeaderboard(): Promise<{ entries: LeaderboardEntry[] }>
   const loans = loansRes.data ?? [];
   const history = historyRes.data ?? [];
 
-  const entries: LeaderboardEntry[] = profiles.map((p) => {
+  // Only show players who placed a bet within the last 3 days; anyone with no
+  // recent activity (or no bets at all) drops off the 龍虎榜.
+  const activeCutoff = Date.now() - 3 * 24 * 60 * 60 * 1000;
+  const activeProfiles = profiles.filter((p) =>
+    bets.some(
+      (b) =>
+        b.user_id === p.id &&
+        new Date(b.created_at).getTime() >= activeCutoff
+    )
+  );
+
+  const entries: LeaderboardEntry[] = activeProfiles.map((p) => {
     const userBets = bets.filter((b) => b.user_id === p.id);
     const totalBorrowed = calculateLoanBalance(
       loans.filter((transaction) => transaction.user_id === p.id)
