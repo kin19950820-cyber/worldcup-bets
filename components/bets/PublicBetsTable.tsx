@@ -53,9 +53,15 @@ type SortKey =
   | "payout"
   | "possible"
   | "stake"
-  | "odds";
+  | "odds"
+  | "actual";
 
 const num = (value: number) => Number(value) || 0;
+
+// Effective odds actually achieved = payout / stake (matches nominal odds on a
+// full win, lower for 贏半/走盤, 0 for a loss).
+const actualOdds = (bet: { payout: number; stake: number }) =>
+  num(bet.stake) > 0 ? num(bet.payout) / num(bet.stake) : 0;
 
 export default function PublicBetsTable({ initialBets, matches, players }: Props) {
   const [filterMatch, setFilterMatch] = useState("all");
@@ -93,6 +99,8 @@ export default function PublicBetsTable({ initialBets, matches, players }: Props
         return num(b.stake) - num(a.stake);
       case "odds":
         return num(b.odds) - num(a.odds);
+      case "actual":
+        return actualOdds(b) - actualOdds(a);
       case "oldest":
         return (
           new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
@@ -182,6 +190,7 @@ export default function PublicBetsTable({ initialBets, matches, players }: Props
           <option value="possible">可贏最多</option>
           <option value="stake">投注最多</option>
           <option value="odds">賠率最高</option>
+          <option value="actual">實際賠率最高</option>
         </select>
       </div>
 
@@ -304,12 +313,20 @@ export default function PublicBetsTable({ initialBets, matches, players }: Props
                   </span>
                 </div>
                 {["won", "half_won", "half_lost", "void"].includes(displayStatus) && (
-                  <div>
-                    <span className="text-slate-500">實得 </span>
-                    <span className="text-emerald-400 font-medium">
-                      {formatCurrency(bet.payout)}
-                    </span>
-                  </div>
+                  <>
+                    <div>
+                      <span className="text-slate-500">實得 </span>
+                      <span className="text-emerald-400 font-medium">
+                        {formatCurrency(bet.payout)}
+                      </span>
+                    </div>
+                    <div>
+                      <span className="text-slate-500">實際賠率 </span>
+                      <span className="text-white font-medium">
+                        {actualOdds(bet).toFixed(2)}
+                      </span>
+                    </div>
+                  </>
                 )}
                 <div className="ml-auto text-slate-600">
                   {formatHKTime(bet.created_at, "MM/dd HH:mm")}
