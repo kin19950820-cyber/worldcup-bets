@@ -47,11 +47,22 @@ const STATUS_COLORS: Record<string, string> = {
 
 const BETS_PER_PAGE = 20;
 
+type SortKey =
+  | "newest"
+  | "oldest"
+  | "payout"
+  | "possible"
+  | "stake"
+  | "odds";
+
+const num = (value: number) => Number(value) || 0;
+
 export default function PublicBetsTable({ initialBets, matches, players }: Props) {
   const [filterMatch, setFilterMatch] = useState("all");
   const [filterPlayer, setFilterPlayer] = useState("all");
   const [filterStatus, setFilterStatus] = useState("all");
   const [filterType, setFilterType] = useState("all");
+  const [sortBy, setSortBy] = useState<SortKey>("newest");
   const [page, setPage] = useState(1);
 
   const filtered = initialBets.filter((b) => {
@@ -72,13 +83,34 @@ export default function PublicBetsTable({ initialBets, matches, players }: Props
     if (filterType !== "all" && b.bet_type !== filterType) return false;
     return true;
   });
-  const totalPages = Math.max(1, Math.ceil(filtered.length / BETS_PER_PAGE));
+  const sorted = [...filtered].sort((a, b) => {
+    switch (sortBy) {
+      case "payout":
+        return num(b.payout) - num(a.payout);
+      case "possible":
+        return num(b.possible_return) - num(a.possible_return);
+      case "stake":
+        return num(b.stake) - num(a.stake);
+      case "odds":
+        return num(b.odds) - num(a.odds);
+      case "oldest":
+        return (
+          new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
+        );
+      case "newest":
+      default:
+        return (
+          new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+        );
+    }
+  });
+  const totalPages = Math.max(1, Math.ceil(sorted.length / BETS_PER_PAGE));
   const pageStart = (page - 1) * BETS_PER_PAGE;
-  const visibleBets = filtered.slice(pageStart, pageStart + BETS_PER_PAGE);
+  const visibleBets = sorted.slice(pageStart, pageStart + BETS_PER_PAGE);
 
   useEffect(() => {
     setPage(1);
-  }, [filterMatch, filterPlayer, filterStatus, filterType]);
+  }, [filterMatch, filterPlayer, filterStatus, filterType, sortBy]);
 
   useEffect(() => {
     setPage((current) => Math.min(current, totalPages));
@@ -135,6 +167,22 @@ export default function PublicBetsTable({ initialBets, matches, players }: Props
         >
           重設篩選
         </button>
+      </div>
+
+      <div className="flex items-center gap-2">
+        <label className="shrink-0 text-xs text-slate-500">排序</label>
+        <select
+          value={sortBy}
+          onChange={(e) => setSortBy(e.target.value as SortKey)}
+          className="form-input text-sm py-2 sm:max-w-xs"
+        >
+          <option value="newest">最新優先</option>
+          <option value="oldest">最舊優先</option>
+          <option value="payout">派彩最多（實得）</option>
+          <option value="possible">可贏最多</option>
+          <option value="stake">投注最多</option>
+          <option value="odds">賠率最高</option>
+        </select>
       </div>
 
       <div className="flex items-center justify-between gap-3 text-xs text-slate-500">
