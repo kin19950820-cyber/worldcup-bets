@@ -1,7 +1,12 @@
 "use client";
 
-import { useState, useTransition } from "react";
-import { syncMatches, addMatchManually } from "@/lib/actions/matches";
+import { useCallback, useEffect, useRef, useState, useTransition } from "react";
+import {
+  syncMatches,
+  addMatchManually,
+  getAllMatches,
+} from "@/lib/actions/matches";
+import { isMatchClosed } from "@/lib/match-status";
 import { formatHKTime, getMatchStatusLabel, cn } from "@/lib/utils";
 import toast from "react-hot-toast";
 import type { Match } from "@/lib/types";
@@ -10,28 +15,65 @@ interface Props {
   initialMatches: Match[];
 }
 
+const AUTO_REFRESH_INTERVAL_MS = 2 * 60 * 1000;
+const STALE_COMPLETED_MS = 2 * 24 * 60 * 60 * 1000;
+
 export default function AdminMatchManager({ initialMatches }: Props) {
   const [matches, setMatches] = useState<Match[]>(initialMatches);
   const [syncing, startSync] = useTransition();
   const [adding, startAdd] = useTransition();
   const [showAddForm, setShowAddForm] = useState(false);
+  const [autoRefresh, setAutoRefresh] = useState(false);
+  const [lastSyncAt, setLastSyncAt] = useState<Date | null>(null);
+  const runningRef = useRef(false);
+
+  const refreshList = useCallback(async () => {
+    const { matches: latest } = await getAllMatches();
+    if (latest) setMatches(latest);
+  }, []);
+
+  // Re-sync from the API and refresh the list. `silent` skips toasts for the
+  // background auto-refresh; `runningRef` prevents overlapping runs.
+  const runSync = useCallback(
+    async ({ silent }: { silent?: boolean } = {}) => {
+      if (runningRef.current) return;
+      runningRef.current = true;
+      try {
+        const res = await syncMatches();
+        if ("error" in res && res.error) {
+          if (!silent) toast.error(res.error, { id: "sync" });
+        } else if ("success" in res) {
+          if (!silent) {
+            toast.success(
+              `同步完成！更新 ${res.synced} 場賽事${
+                res.failed ? `，${res.failed} 場失敗` : ""
+              }`,
+              { id: "sync", duration: 5000 }
+            );
+          }
+          await refreshList();
+          setLastSyncAt(new Date());
+        }
+      } finally {
+        runningRef.current = false;
+      }
+    },
+    [refreshList]
+  );
 
   const handleSync = () => {
     startSync(async () => {
       toast.loading("同步中…", { id: "sync" });
-      const res = await syncMatches();
-      if ("error" in res && res.error) {
-        toast.error(res.error, { id: "sync" });
-      } else if ("success" in res) {
-        toast.success(
-          `同步完成！更新 ${res.synced} 場賽事${res.failed ? `，${res.failed} 場失敗` : ""}`,
-          { id: "sync", duration: 5000 }
-        );
-        // Reload page data
-        window.location.reload();
-      }
+      await runSync();
     });
   };
+
+  useEffect(() => {
+    if (!autoRefresh) return;
+    void runSync({ silent: true });
+    const id = setInterval(() => void runSync({ silent: true }), AUTO_REFRESH_INTERVAL_MS);
+    return () => clearInterval(id);
+  }, [autoRefresh, runSync]);
 
   const handleAddMatch = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -43,7 +85,7 @@ export default function AdminMatchManager({ initialMatches }: Props) {
       } else {
         toast.success("賽事已新增！");
         setShowAddForm(false);
-        window.location.reload();
+        await refreshList();
       }
     });
   };
@@ -54,6 +96,15 @@ export default function AdminMatchManager({ initialMatches }: Props) {
   const others = matches.filter(
     (m) => !["SCHEDULED", "TIMED"].includes(m.status) || new Date(m.kickoff_time) <= new Date()
   );
+
+  // Hide matches finished/completed more than 2 days ago to keep the list tidy.
+  const now = Date.now();
+  const visibleMatches = matches.filter((m) => {
+    const kickoff = new Date(m.kickoff_time).getTime();
+    const completed = isMatchClosed(m.status) || kickoff <= now;
+    return !(completed && kickoff < now - STALE_COMPLETED_MS);
+  });
+  const hiddenCount = matches.length - visibleMatches.length;
 
   return (
     <div className="space-y-4">
@@ -72,6 +123,31 @@ export default function AdminMatchManager({ initialMatches }: Props) {
         >
           ➕
         </button>
+      </div>
+
+      {/* Auto refresh */}
+      <div className="flex items-center justify-between gap-3 rounded-xl border border-slate-800 bg-slate-900/60 px-4 py-3">
+        <div>
+          <label className="flex items-center gap-2 text-sm font-medium text-white">
+            <input
+              type="checkbox"
+              checked={autoRefresh}
+              onChange={(e) => setAutoRefresh(e.target.checked)}
+              className="h-4 w-4 accent-brand-500"
+            />
+            自動更新（每 2 分鐘）
+          </label>
+          <p className="mt-1 text-xs text-slate-500">
+            {autoRefresh
+              ? "已開啟，會在此頁背景自動同步 API"
+              : "開啟後會定時自動同步賽程"}
+          </p>
+        </div>
+        <span className="shrink-0 text-xs text-slate-500">
+          {lastSyncAt
+            ? `上次更新 ${formatHKTime(lastSyncAt.toISOString(), "HH:mm:ss")}`
+            : "尚未更新"}
+        </span>
       </div>
 
       {/* Manual add form */}
@@ -130,13 +206,20 @@ export default function AdminMatchManager({ initialMatches }: Props) {
 
       {/* Match list */}
       <div className="space-y-2">
-        <h3 className="text-slate-400 text-sm font-medium">賽事列表</h3>
-        {matches.length === 0 ? (
+        <div className="flex items-center justify-between gap-2">
+          <h3 className="text-slate-400 text-sm font-medium">賽事列表</h3>
+          {hiddenCount > 0 && (
+            <span className="text-xs text-slate-600">
+              已隱藏 {hiddenCount} 場 2 天前完成賽事
+            </span>
+          )}
+        </div>
+        {visibleMatches.length === 0 ? (
           <div className="card p-8 text-center text-slate-500">
-            <p>暫無賽事，請先同步 API</p>
+            <p>{matches.length === 0 ? "暫無賽事，請先同步 API" : "沒有近期賽事"}</p>
           </div>
         ) : (
-          matches.map((m) => (
+          visibleMatches.map((m) => (
             <div key={m.id} className="card p-3 flex items-center gap-3">
               <span
                 className={cn(
