@@ -718,7 +718,7 @@ const fetchHkjcFootballMatches = unstable_cache(
 // external_match_id is `hkjc-outright-<oddsType>-<poolId>`.
 // ---------------------------------------------------------------------------
 
-export const OUTRIGHT_PREFIX = "hkjc-outright-";
+const OUTRIGHT_PREFIX = "hkjc-outright-";
 const OUTRIGHT_ODDS_TYPES = ["CHP", "TPS"] as const;
 
 type HkjcTournament = {
