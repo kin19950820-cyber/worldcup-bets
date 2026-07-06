@@ -92,6 +92,55 @@ export async function syncMatches() {
   }
 }
 
+export async function syncSpecialMarkets() {
+  const service = createServiceClient();
+  const supabase = await createClient();
+
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { error: "未登入" };
+
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("role")
+    .eq("id", user.id)
+    .single();
+  if (profile?.role !== "admin") return { error: "權限不足" };
+
+  const { getOutrightMarketsForSync } = await import("@/lib/actions/odds");
+  const markets = await getOutrightMarketsForSync();
+
+  if (markets.length === 0) {
+    return { error: "馬會暫時沒有可同步的特別項目賠率" };
+  }
+
+  // Keep special markets bettable until HKJC suspends them; fall back to a
+  // far-future kickoff when no suspend time is provided.
+  const fallbackKickoff = new Date(
+    Date.now() + 60 * 24 * 60 * 60 * 1000
+  ).toISOString();
+
+  let synced = 0;
+  let failed = 0;
+  for (const market of markets) {
+    const { error } = await service.from("matches").upsert(
+      {
+        external_match_id: market.externalId,
+        home_team: market.marketName,
+        away_team: market.tournamentName,
+        kickoff_time: market.suspendAt ?? fallbackKickoff,
+        stage: "特別項目",
+        status: "SCHEDULED",
+        updated_at: new Date().toISOString(),
+      },
+      { onConflict: "external_match_id" }
+    );
+    if (error) failed++;
+    else synced++;
+  }
+
+  return { success: true, synced, failed, total: markets.length };
+}
+
 export async function addMatchManually(formData: FormData) {
   const service = createServiceClient();
   const supabase = await createClient();

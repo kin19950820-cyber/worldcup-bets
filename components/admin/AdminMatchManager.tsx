@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState, useTransition } from "react";
 import {
   syncMatches,
+  syncSpecialMarkets,
   addMatchManually,
   getAllMatches,
 } from "@/lib/actions/matches";
@@ -21,6 +22,7 @@ const STALE_COMPLETED_MS = 2 * 24 * 60 * 60 * 1000;
 export default function AdminMatchManager({ initialMatches }: Props) {
   const [matches, setMatches] = useState<Match[]>(initialMatches);
   const [syncing, startSync] = useTransition();
+  const [syncingSpecial, startSpecial] = useTransition();
   const [adding, startAdd] = useTransition();
   const [showAddForm, setShowAddForm] = useState(false);
   const [autoRefresh, setAutoRefresh] = useState(false);
@@ -65,6 +67,22 @@ export default function AdminMatchManager({ initialMatches }: Props) {
     startSync(async () => {
       toast.loading("同步中…", { id: "sync" });
       await runSync();
+    });
+  };
+
+  const handleSyncSpecial = () => {
+    startSpecial(async () => {
+      toast.loading("同步特別項目中…", { id: "special" });
+      const res = await syncSpecialMarkets();
+      if ("error" in res && res.error) {
+        toast.error(res.error, { id: "special" });
+      } else if ("success" in res) {
+        toast.success(`特別項目同步完成！共 ${res.synced} 個項目`, {
+          id: "special",
+          duration: 5000,
+        });
+        await refreshList();
+      }
     });
   };
 
@@ -124,6 +142,14 @@ export default function AdminMatchManager({ initialMatches }: Props) {
           ➕
         </button>
       </div>
+
+      <button
+        onClick={handleSyncSpecial}
+        disabled={syncingSpecial}
+        className="btn-secondary w-full"
+      >
+        {syncingSpecial ? "同步特別項目中…" : "🏆 同步特別項目（冠軍 / 神射手）"}
+      </button>
 
       {/* Auto refresh */}
       <div className="flex items-center justify-between gap-3 rounded-xl border border-slate-800 bg-slate-900/60 px-4 py-3">

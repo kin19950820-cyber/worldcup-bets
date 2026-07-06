@@ -62,6 +62,7 @@ type HkjcPool = {
   name_ch?: string;
   name_en?: string;
   updateAt?: string;
+  expectedSuspendDateTime?: string;
   lines?: HkjcLine[];
 };
 
@@ -711,6 +712,176 @@ const fetchHkjcFootballMatches = unstable_cache(
   { revalidate: 60 }
 );
 
+// ---------------------------------------------------------------------------
+// Outright / tournament markets (冠軍, 神射手, …). These are not tied to a
+// single fixture, so they are surfaced as "virtual" matches whose
+// external_match_id is `hkjc-outright-<oddsType>-<poolId>`.
+// ---------------------------------------------------------------------------
+
+export const OUTRIGHT_PREFIX = "hkjc-outright-";
+const OUTRIGHT_ODDS_TYPES = ["CHP", "TPS"] as const;
+
+type HkjcTournament = {
+  id: string;
+  name_en?: string;
+  name_ch?: string;
+  foPools?: HkjcPool[];
+};
+
+const HKJC_OUTRIGHT_QUERY = `query tournamentList($fbOddsTypes: [FBOddsType]!, $tournId: String, $tournProfileId: String, $subType: Int, $tournIds: [String]) {
+  tournaments(fbOddsTypes: $fbOddsTypes, tournId: $tournId, tournProfileId: $tournProfileId, subType: $subType, tournIds: $tournIds) {
+    id nameProfileId frontEndId code sequence name_en name_ch isInteractiveServiceAvailable
+    poolInfo { normalPools inplayPools sellingPools }
+    foPools(fbOddsTypes: $fbOddsTypes) {
+      id instNo oddsType status name_en name_ch inplay expectedSuspendDateTime chpType
+      lines { lineId status combinations { combId str status currentOdds selections { selId name_en name_ch str sequence } } }
+      match { id status homeTeam { name_en } }
+    }
+  }
+}`;
+
+async function fetchHkjcOutrightTournamentsUncached(oddsType: string) {
+  const response = await fetch(HKJC_GRAPHQL_ENDPOINT, {
+    method: "POST",
+    headers: {
+      accept: "application/json, text/plain, */*",
+      "content-type": "application/json",
+      origin: HKJC_FOOTBALL_ORIGIN,
+      priority: "u=1, i",
+      referer: HKJC_FOOTBALL_REFERER,
+      "user-agent":
+        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36",
+    },
+    body: JSON.stringify({
+      operationName: "tournamentList",
+      query: HKJC_OUTRIGHT_QUERY,
+      variables: {
+        fbOddsTypes: [oddsType],
+        tournId: null,
+        tournProfileId: null,
+        subType: null,
+        tournIds: null,
+      },
+    }),
+    next: { revalidate: 60 },
+  });
+
+  if (!response.ok) return [];
+
+  const data = (await response.json()) as {
+    data?: { tournaments?: HkjcTournament[] | null };
+    errors?: Array<{ message?: string }>;
+  };
+  if (data.errors?.length) {
+    console.warn(
+      "HKJC outright fetch failed:",
+      data.errors.map((error) => error.message).join("; ")
+    );
+    return [];
+  }
+
+  return data.data?.tournaments ?? [];
+}
+
+const fetchHkjcOutrightTournaments = unstable_cache(
+  fetchHkjcOutrightTournamentsUncached,
+  ["hkjc-outright-odds"],
+  { revalidate: 60 }
+);
+
+function outrightBetType(oddsType: string): BetOption["bet_type"] {
+  return oddsType === "CHP" ? "冠軍" : "特別盤";
+}
+
+function outrightOptionsFromPool(pool: HkjcPool): BetOption[] {
+  const bet_type = outrightBetType(pool.oddsType);
+
+  return (pool.lines ?? [])
+    .filter((line) => isOpenStatus(line.status))
+    .flatMap((line) =>
+      (line.combinations ?? []).map((combination) => {
+        if (!isOpenStatus(combination.status)) return null;
+
+        const odds = parseOdds(combination.currentOdds);
+        if (!odds) return null;
+
+        const selection =
+          (combination.selections ?? [])
+            .map((s) => s.name_ch || s.name_en || s.str)
+            .filter(Boolean)
+            .join(" / ") ||
+          combination.str ||
+          "";
+        if (!selection) return null;
+
+        return {
+          id: `hkjc-out-${pool.id}-${combination.combId ?? selection}`,
+          market: pool.name_ch || pool.name_en || pool.oddsType,
+          bet_type,
+          selection,
+          odds,
+          updated_at: pool.updateAt || null,
+        };
+      })
+    )
+    .filter((option): option is BetOption => option !== null);
+}
+
+// Pools available for creating/refreshing virtual "special" matches.
+export async function getOutrightMarketsForSync() {
+  const tournaments = (
+    await Promise.all(
+      OUTRIGHT_ODDS_TYPES.map((oddsType) =>
+        fetchHkjcOutrightTournaments(oddsType)
+      )
+    )
+  ).flat();
+
+  const markets: Array<{
+    externalId: string;
+    oddsType: string;
+    poolId: string;
+    marketName: string;
+    tournamentName: string;
+    suspendAt: string | null;
+  }> = [];
+
+  for (const tournament of tournaments) {
+    for (const pool of tournament.foPools ?? []) {
+      if (outrightOptionsFromPool(pool).length === 0) continue;
+      markets.push({
+        externalId: `${OUTRIGHT_PREFIX}${pool.oddsType}-${pool.id}`,
+        oddsType: pool.oddsType,
+        poolId: pool.id,
+        marketName: pool.name_ch || pool.name_en || pool.oddsType,
+        tournamentName: tournament.name_ch || tournament.name_en || "特別項目",
+        suspendAt: pool.expectedSuspendDateTime || null,
+      });
+    }
+  }
+
+  return markets;
+}
+
+async function getOutrightBetOptions(externalMatchId: string) {
+  const rest = externalMatchId.slice(OUTRIGHT_PREFIX.length);
+  const separator = rest.indexOf("-");
+  if (separator < 0) return [];
+  const oddsType = rest.slice(0, separator);
+  const poolId = rest.slice(separator + 1);
+
+  const tournaments = await fetchHkjcOutrightTournaments(oddsType);
+  for (const tournament of tournaments) {
+    const pool = (tournament.foPools ?? []).find((p) => p.id === poolId);
+    if (pool) {
+      return outrightOptionsFromPool(pool).sort(
+        (a, b) => a.odds - b.odds
+      );
+    }
+  }
+  return [];
+}
+
 function mergeHkjcMatches(existing: HkjcMatch[], incoming: HkjcMatch[]) {
   const byId = new Map(existing.map((match) => [match.id, match]));
 
@@ -805,6 +976,13 @@ export async function getBetOptionsForMatch(
     .single();
 
   if (error || !match || !isMatchBettable(match)) return [];
+
+  // Outright markets (冠軍 / 神射手 …) are virtual matches; fetch their odds
+  // from HKJC's tournament feed instead of matching by team name.
+  if (match.external_match_id?.startsWith(OUTRIGHT_PREFIX)) {
+    const options = await getOutrightBetOptions(match.external_match_id);
+    return betType ? options.filter((o) => o.bet_type === betType) : options;
+  }
 
   const hkjcMatches = (
     await Promise.all(
