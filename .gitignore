@@ -9,3 +9,4 @@ supabase/.temp/
 
 *.tsbuildinfo
 .claude/settings.local.json
+scripts/.cache-results.csv

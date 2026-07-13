@@ -6,7 +6,8 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "quant:train": "npx -y tsx scripts/quant-train.ts"
   },
   "dependencies": {
     "@supabase/ssr": "^0.12.0",

@@ -20,6 +20,10 @@ const navItems = [
   { href: "/bets-board", label: "投注版", icon: "📋" },
 ];
 
+const menuItems = [
+  { href: "/quant", label: "量化分析", icon: "📈" },
+];
+
 const adminItems = [
   { href: "/admin/settle", label: "結算", icon: "⚖️" },
   { href: "/admin/matches", label: "管理", icon: "🔄" },
@@ -50,6 +54,20 @@ export default function Navbar({ displayName, role, balance }: NavbarProps) {
 
         <nav className="flex items-center gap-1 flex-1">
           {navItems.map((item) => (
+            <Link
+              key={item.href}
+              href={item.href}
+              className={cn(
+                "px-3 py-1.5 rounded-lg text-sm font-medium transition-colors",
+                pathname === item.href
+                  ? "bg-brand-500/20 text-brand-400"
+                  : "text-slate-400 hover:text-white hover:bg-slate-800"
+              )}
+            >
+              {item.icon} {item.label}
+            </Link>
+          ))}
+          {menuItems.map((item) => (
             <Link
               key={item.href}
               href={item.href}
@@ -166,6 +184,19 @@ export default function Navbar({ displayName, role, balance }: NavbarProps) {
                 </span>
               )}
             </div>
+
+            {menuItems.map((item) => (
+              <Link
+                key={item.href}
+                href={item.href}
+                onClick={() => setMenuOpen(false)}
+                className="flex items-center gap-3 text-slate-200 py-2 text-sm font-medium"
+              >
+                <span>{item.icon}</span>
+                <span>{item.label}</span>
+              </Link>
+            ))}
+            <div className="border-t border-slate-800" />
 
             {isAdmin && (
               <>
