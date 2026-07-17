@@ -1,19 +1,19 @@
 {
-  "trainedAt": "2026-07-13T17:35:51.333Z",
+  "trainedAt": "2026-07-17T07:51:47.694Z",
   "source": "https://raw.githubusercontent.com/martj42/international_results/master/results.csv",
-  "totalMatches": 49505,
-  "lastMatchDate": "2026-07-11",
+  "totalMatches": 49518,
+  "lastMatchDate": "2026-07-15",
   "teams": {
     "Abkhazia": {
-      "rating": 1628.8,
+      "rating": 1628.5,
       "matches": 33
     },
     "Afghanistan": {
-      "rating": 1174.1,
+      "rating": 1174.2,
       "matches": 147
     },
     "Albania": {
-      "rating": 1677.6,
+      "rating": 1677.8,
       "matches": 398
     },
     "Alderney": {
@@ -21,11 +21,11 @@
       "matches": 135
     },
     "Algeria": {
-      "rating": 1859.5,
+      "rating": 1859.6,
       "matches": 621
     },
     "Ambazonia": {
-      "rating": 1392.2,
+      "rating": 1389.1,
       "matches": 6
     },
     "American Samoa": {
@@ -37,11 +37,11 @@
       "matches": 13
     },
     "Andorra": {
-      "rating": 1152.2,
+      "rating": 1152.4,
       "matches": 229
     },
     "Angola": {
-      "rating": 1590,
+      "rating": 1590.1,
       "matches": 415
     },
     "Anguilla": {
@@ -53,19 +53,19 @@
       "matches": 231
     },
     "Arameans Suryoye": {
-      "rating": 1546.3,
+      "rating": 1545.5,
       "matches": 10
     },
     "Argentina": {
-      "rating": 2257.4,
-      "matches": 1075
+      "rating": 2280,
+      "matches": 1076
     },
     "Armenia": {
-      "rating": 1446.8,
+      "rating": 1447,
       "matches": 272
     },
     "Artsakh": {
-      "rating": 1557.4,
+      "rating": 1556.1,
       "matches": 11
     },
     "Aruba": {
@@ -81,7 +81,7 @@
       "matches": 585
     },
     "Austria": {
-      "rating": 1894.6,
+      "rating": 1894.7,
       "matches": 864
     },
     "Aymara": {
@@ -89,15 +89,15 @@
       "matches": 2
     },
     "Azerbaijan": {
-      "rating": 1404.9,
+      "rating": 1405.1,
       "matches": 310
     },
     "Bahamas": {
-      "rating": 959.9,
+      "rating": 960,
       "matches": 67
     },
     "Bahrain": {
-      "rating": 1542.6,
+      "rating": 1542.7,
       "matches": 584
     },
     "Bangladesh": {
@@ -105,11 +105,11 @@
       "matches": 305
     },
     "Barawa": {
-      "rating": 1358.5,
+      "rating": 1358.8,
       "matches": 12
     },
     "Barbados": {
-      "rating": 1129.9,
+      "rating": 1130,
       "matches": 302
     },
     "Basque Country": {
@@ -117,15 +117,15 @@
       "matches": 64
     },
     "Belarus": {
-      "rating": 1587.8,
+      "rating": 1588,
       "matches": 315
     },
     "Belgium": {
-      "rating": 2036.8,
+      "rating": 2036.9,
       "matches": 859
     },
     "Belize": {
-      "rating": 1282.2,
+      "rating": 1282.3,
       "matches": 121
     },
     "Benin": {
@@ -137,7 +137,7 @@
       "matches": 198
     },
     "Bhutan": {
-      "rating": 860.8,
+      "rating": 860.9,
       "matches": 110
     },
     "Biafra": {
@@ -153,11 +153,11 @@
       "matches": 44
     },
     "Bosnia and Herzegovina": {
-      "rating": 1677.5,
+      "rating": 1677.6,
       "matches": 287
     },
     "Botswana": {
-      "rating": 1388.1,
+      "rating": 1388.2,
       "matches": 332
     },
     "Brazil": {
@@ -177,39 +177,43 @@
       "matches": 137
     },
     "Bulgaria": {
-      "rating": 1545.8,
+      "rating": 1546,
       "matches": 736
     },
     "Burkina Faso": {
-      "rating": 1653,
+      "rating": 1653.1,
       "matches": 464
     },
     "Burundi": {
-      "rating": 1388,
+      "rating": 1388.1,
       "matches": 218
     },
     "Cambodia": {
-      "rating": 1077.9,
+      "rating": 1078,
       "matches": 295
     },
     "Cameroon": {
-      "rating": 1725.2,
+      "rating": 1725.3,
       "matches": 616
     },
     "Canada": {
-      "rating": 1842.3,
+      "rating": 1842.4,
       "matches": 474
     },
     "Canary Islands": {
       "rating": 1515.4,
       "matches": 4
     },
+    "Canton Ticino": {
+      "rating": 1406.4,
+      "matches": 5
+    },
     "Cape Verde": {
-      "rating": 1699.8,
+      "rating": 1699.9,
       "matches": 239
     },
     "Cascadia": {
-      "rating": 1545.4,
+      "rating": 1545.3,
       "matches": 7
     },
     "Catalonia": {
@@ -217,11 +221,11 @@
       "matches": 48
     },
     "Cayman Islands": {
-      "rating": 1044.4,
-      "matches": 120
+      "rating": 1053.3,
+      "matches": 119
     },
     "Central African Republic": {
-      "rating": 1362.9,
+      "rating": 1363,
       "matches": 138
     },
     "Central Spain": {
@@ -229,15 +233,15 @@
       "matches": 2
     },
     "Chad": {
-      "rating": 1247,
+      "rating": 1247.1,
       "matches": 138
     },
     "Chagos Islands": {
-      "rating": 1359.5,
+      "rating": 1359.3,
       "matches": 16
     },
     "Chameria": {
-      "rating": 1554,
+      "rating": 1553.2,
       "matches": 7
     },
     "Chechnya": {
@@ -245,7 +249,7 @@
       "matches": 3
     },
     "Chile": {
-      "rating": 1805.4,
+      "rating": 1805.5,
       "matches": 835
     },
     "China": {
@@ -253,7 +257,7 @@
       "matches": 702
     },
     "Cilento": {
-      "rating": 1490.6,
+      "rating": 1490.5,
       "matches": 1
     },
     "Colombia": {
@@ -261,11 +265,11 @@
       "matches": 643
     },
     "Comoros": {
-      "rating": 1487,
+      "rating": 1487.1,
       "matches": 151
     },
     "Congo": {
-      "rating": 1330.4,
+      "rating": 1330.5,
       "matches": 406
     },
     "Cook Islands": {
@@ -277,19 +281,19 @@
       "matches": 9
     },
     "Costa Rica": {
-      "rating": 1745.8,
+      "rating": 1745.9,
       "matches": 724
     },
     "County of Nice": {
-      "rating": 1591,
+      "rating": 1590.8,
       "matches": 9
     },
     "Crimea": {
-      "rating": 1504.9,
+      "rating": 1507.7,
       "matches": 5
     },
     "Croatia": {
-      "rating": 1944.5,
+      "rating": 1944.6,
       "matches": 400
     },
     "Cuba": {
@@ -297,31 +301,31 @@
       "matches": 397
     },
     "Curaçao": {
-      "rating": 1597.8,
+      "rating": 1597.9,
       "matches": 388
     },
     "Cyprus": {
-      "rating": 1374.9,
+      "rating": 1375.1,
       "matches": 426
     },
     "Czech Republic": {
-      "rating": 1753.5,
+      "rating": 1753.7,
       "matches": 883
     },
     "DR Congo": {
-      "rating": 1810.3,
+      "rating": 1810.4,
       "matches": 528
     },
     "Darfur": {
-      "rating": 1274.8,
+      "rating": 1275.5,
       "matches": 7
     },
     "Denmark": {
-      "rating": 1919.7,
+      "rating": 1919.9,
       "matches": 874
     },
     "Djibouti": {
-      "rating": 1075.6,
+      "rating": 1075.7,
       "matches": 111
     },
     "Dominica": {
@@ -341,7 +345,7 @@
       "matches": 2
     },
     "East Turkestan": {
-      "rating": 1455.9,
+      "rating": 1455.8,
       "matches": 5
     },
     "Ecuador": {
@@ -349,7 +353,7 @@
       "matches": 595
     },
     "Egypt": {
-      "rating": 1859.2,
+      "rating": 1859.3,
       "matches": 761
     },
     "El Salvador": {
@@ -361,23 +365,23 @@
       "matches": 2
     },
     "Ellan Vannin": {
-      "rating": 1569.8,
+      "rating": 1569.4,
       "matches": 22
     },
     "England": {
-      "rating": 2169.7,
-      "matches": 1096
+      "rating": 2147.3,
+      "matches": 1097
     },
     "Equatorial Guinea": {
-      "rating": 1445.4,
+      "rating": 1445.5,
       "matches": 179
     },
     "Eritrea": {
-      "rating": 1197.2,
+      "rating": 1197.3,
       "matches": 71
     },
     "Estonia": {
-      "rating": 1426.8,
+      "rating": 1427,
       "matches": 550
     },
     "Eswatini": {
@@ -385,35 +389,35 @@
       "matches": 274
     },
     "Ethiopia": {
-      "rating": 1393.1,
+      "rating": 1393.2,
       "matches": 409
     },
     "Falkland Islands": {
-      "rating": 1214.5,
+      "rating": 1214.6,
       "matches": 33
     },
     "Faroe Islands": {
-      "rating": 1437.5,
+      "rating": 1437.8,
       "matches": 287
     },
     "Felvidék": {
-      "rating": 1507.5,
+      "rating": 1507.3,
       "matches": 12
     },
     "Fiji": {
-      "rating": 1424.3,
+      "rating": 1424.4,
       "matches": 268
     },
     "Finland": {
-      "rating": 1617.2,
+      "rating": 1617.4,
       "matches": 818
     },
     "France": {
-      "rating": 2232.6,
-      "matches": 941
+      "rating": 2190.5,
+      "matches": 942
     },
     "Franconia": {
-      "rating": 1478.2,
+      "rating": 1478.1,
       "matches": 3
     },
     "French Guiana": {
@@ -421,23 +425,23 @@
       "matches": 179
     },
     "Frøya": {
-      "rating": 1194.4,
+      "rating": 1194.5,
       "matches": 37
     },
     "Gabon": {
-      "rating": 1522.5,
+      "rating": 1522.6,
       "matches": 405
     },
     "Galicia": {
-      "rating": 1528.1,
+      "rating": 1527.9,
       "matches": 12
     },
     "Gambia": {
-      "rating": 1540.1,
+      "rating": 1540.2,
       "matches": 266
     },
     "Georgia": {
-      "rating": 1709.2,
+      "rating": 1709.4,
       "matches": 307
     },
     "German DR": {
@@ -445,39 +449,39 @@
       "matches": 298
     },
     "Germany": {
-      "rating": 1993.8,
+      "rating": 1994,
       "matches": 1035
     },
     "Ghana": {
-      "rating": 1682.3,
+      "rating": 1682.4,
       "matches": 675
     },
     "Gibraltar": {
-      "rating": 1150.2,
-      "matches": 160
+      "rating": 1141.5,
+      "matches": 159
     },
     "Gotland": {
-      "rating": 1443.8,
+      "rating": 1443.9,
       "matches": 30
     },
     "Gozo": {
-      "rating": 1469.3,
+      "rating": 1467.8,
       "matches": 14
     },
     "Greece": {
-      "rating": 1791.4,
+      "rating": 1791.7,
       "matches": 633
     },
     "Greenland": {
-      "rating": 1465.5,
-      "matches": 77
+      "rating": 1494.2,
+      "matches": 80
     },
     "Grenada": {
       "rating": 1283.1,
       "matches": 260
     },
     "Guadeloupe": {
-      "rating": 1513.9,
+      "rating": 1514,
       "matches": 271
     },
     "Guam": {
@@ -493,11 +497,11 @@
       "matches": 240
     },
     "Guinea": {
-      "rating": 1581.4,
+      "rating": 1581.5,
       "matches": 539
     },
     "Guinea-Bissau": {
-      "rating": 1361.9,
+      "rating": 1362,
       "matches": 190
     },
     "Guyana": {
@@ -505,15 +509,15 @@
       "matches": 313
     },
     "Găgăuzia": {
-      "rating": 1429.6,
+      "rating": 1429.8,
       "matches": 3
     },
     "Haiti": {
-      "rating": 1659.4,
+      "rating": 1659.5,
       "matches": 513
     },
     "Hitra": {
-      "rating": 1343.5,
+      "rating": 1343.6,
       "matches": 23
     },
     "Hmong": {
@@ -521,19 +525,19 @@
       "matches": 3
     },
     "Honduras": {
-      "rating": 1702.2,
+      "rating": 1702.3,
       "matches": 620
     },
     "Hong Kong": {
-      "rating": 1314.3,
+      "rating": 1314.4,
       "matches": 447
     },
     "Hungary": {
-      "rating": 1775.9,
+      "rating": 1776.1,
       "matches": 1006
     },
     "Iceland": {
-      "rating": 1639.8,
+      "rating": 1640,
       "matches": 522
     },
     "India": {
@@ -541,19 +545,19 @@
       "matches": 534
     },
     "Indonesia": {
-      "rating": 1505.8,
+      "rating": 1505.9,
       "matches": 728
     },
     "Iran": {
-      "rating": 1889.5,
+      "rating": 1889.6,
       "matches": 615
     },
     "Iraq": {
-      "rating": 1674.8,
+      "rating": 1674.9,
       "matches": 658
     },
     "Iraqi Kurdistan": {
-      "rating": 1645.3,
+      "rating": 1644.2,
       "matches": 27
     },
     "Isle of Man": {
@@ -561,19 +565,19 @@
       "matches": 58
     },
     "Isle of Wight": {
-      "rating": 1660.3,
+      "rating": 1660.4,
       "matches": 48
     },
     "Israel": {
-      "rating": 1693.7,
+      "rating": 1694,
       "matches": 498
     },
     "Italy": {
-      "rating": 1922.9,
+      "rating": 1923.1,
       "matches": 893
     },
     "Ivory Coast": {
-      "rating": 1843.1,
+      "rating": 1843.2,
       "matches": 640
     },
     "Jamaica": {
@@ -581,7 +585,7 @@
       "matches": 663
     },
     "Japan": {
-      "rating": 1974.6,
+      "rating": 1974.7,
       "matches": 794
     },
     "Jersey": {
@@ -589,7 +593,7 @@
       "matches": 235
     },
     "Jordan": {
-      "rating": 1722.4,
+      "rating": 1722.5,
       "matches": 488
     },
     "Kabylia": {
@@ -597,15 +601,15 @@
       "matches": 6
     },
     "Kazakhstan": {
-      "rating": 1514.6,
+      "rating": 1514.8,
       "matches": 269
     },
     "Kenya": {
-      "rating": 1472,
+      "rating": 1472.1,
       "matches": 706
     },
     "Kernow": {
-      "rating": 1595.6,
+      "rating": 1595.3,
       "matches": 12
     },
     "Kiribati": {
@@ -613,23 +617,23 @@
       "matches": 11
     },
     "Kosovo": {
-      "rating": 1763.4,
-      "matches": 104
+      "rating": 1763.9,
+      "matches": 106
     },
     "Kurdistan": {
-      "rating": 1579.1,
+      "rating": 1579,
       "matches": 5
     },
     "Kuwait": {
-      "rating": 1476.5,
+      "rating": 1476.6,
       "matches": 684
     },
     "Kyrgyzstan": {
-      "rating": 1454.4,
+      "rating": 1454.5,
       "matches": 191
     },
     "Kárpátalja": {
-      "rating": 1607.6,
+      "rating": 1608.4,
       "matches": 11
     },
     "Laos": {
@@ -637,11 +641,11 @@
       "matches": 224
     },
     "Latvia": {
-      "rating": 1346.2,
+      "rating": 1346.4,
       "matches": 461
     },
     "Lebanon": {
-      "rating": 1443.4,
+      "rating": 1443.5,
       "matches": 333
     },
     "Lesotho": {
@@ -649,19 +653,19 @@
       "matches": 296
     },
     "Liberia": {
-      "rating": 1430.4,
+      "rating": 1430.5,
       "matches": 302
     },
     "Libya": {
-      "rating": 1531.6,
+      "rating": 1531.7,
       "matches": 384
     },
     "Liechtenstein": {
-      "rating": 1005.1,
+      "rating": 1005.3,
       "matches": 259
     },
     "Lithuania": {
-      "rating": 1354.1,
+      "rating": 1354.3,
       "matches": 433
     },
     "Luhansk PR": {
@@ -669,7 +673,7 @@
       "matches": 6
     },
     "Luxembourg": {
-      "rating": 1471.5,
+      "rating": 1471.7,
       "matches": 467
     },
     "Macau": {
@@ -685,23 +689,23 @@
       "matches": 1
     },
     "Malawi": {
-      "rating": 1438.7,
+      "rating": 1438.8,
       "matches": 644
     },
     "Malaysia": {
-      "rating": 1483.1,
+      "rating": 1483.2,
       "matches": 835
     },
     "Maldives": {
-      "rating": 998.4,
+      "rating": 998.5,
       "matches": 233
     },
     "Mali": {
-      "rating": 1709.4,
+      "rating": 1709.5,
       "matches": 569
     },
     "Malta": {
-      "rating": 1358.9,
+      "rating": 1359.2,
       "matches": 458
     },
     "Manchukuo": {
@@ -717,7 +721,7 @@
       "matches": 2
     },
     "Martinique": {
-      "rating": 1476.3,
+      "rating": 1476.4,
       "matches": 331
     },
     "Matabeleland": {
@@ -729,11 +733,11 @@
       "matches": 2
     },
     "Mauritania": {
-      "rating": 1445.7,
+      "rating": 1445.8,
       "matches": 273
     },
     "Mauritius": {
-      "rating": 1208.8,
+      "rating": 1208.9,
       "matches": 325
     },
     "Mayotte": {
@@ -741,11 +745,11 @@
       "matches": 38
     },
     "Menorca": {
-      "rating": 1566.1,
+      "rating": 1566.2,
       "matches": 25
     },
     "Mexico": {
-      "rating": 2012.5,
+      "rating": 2012.6,
       "matches": 1008
     },
     "Micronesia": {
@@ -753,11 +757,11 @@
       "matches": 7
     },
     "Moldova": {
-      "rating": 1320.6,
+      "rating": 1320.8,
       "matches": 299
     },
     "Monaco": {
-      "rating": 1452.1,
+      "rating": 1445.3,
       "matches": 24
     },
     "Mongolia": {
@@ -765,7 +769,7 @@
       "matches": 103
     },
     "Montenegro": {
-      "rating": 1522.2,
+      "rating": 1522.4,
       "matches": 170
     },
     "Montserrat": {
@@ -773,27 +777,27 @@
       "matches": 66
     },
     "Morocco": {
-      "rating": 2029.5,
+      "rating": 2029.6,
       "matches": 623
     },
     "Mozambique": {
-      "rating": 1495.5,
+      "rating": 1495.6,
       "matches": 375
     },
     "Myanmar": {
-      "rating": 1137.1,
+      "rating": 1137.2,
       "matches": 512
     },
     "Namibia": {
-      "rating": 1424.7,
+      "rating": 1424.8,
       "matches": 279
     },
     "Nepal": {
-      "rating": 1104.4,
+      "rating": 1104.5,
       "matches": 268
     },
     "Netherlands": {
-      "rating": 2048.8,
+      "rating": 2049,
       "matches": 883
     },
     "New Caledonia": {
@@ -801,7 +805,7 @@
       "matches": 265
     },
     "New Zealand": {
-      "rating": 1680.8,
+      "rating": 1680.9,
       "matches": 419
     },
     "Nicaragua": {
@@ -813,7 +817,7 @@
       "matches": 260
     },
     "Nigeria": {
-      "rating": 1883.2,
+      "rating": 1883.3,
       "matches": 661
     },
     "Niue": {
@@ -821,11 +825,11 @@
       "matches": 2
     },
     "North Korea": {
-      "rating": 1495,
+      "rating": 1495.1,
       "matches": 390
     },
     "North Macedonia": {
-      "rating": 1651.4,
+      "rating": 1651.5,
       "matches": 306
     },
     "North Vietnam": {
@@ -833,11 +837,11 @@
       "matches": 24
     },
     "Northern Cyprus": {
-      "rating": 1690,
-      "matches": 34
+      "rating": 1755.4,
+      "matches": 39
     },
     "Northern Ireland": {
-      "rating": 1668.1,
+      "rating": 1668.3,
       "matches": 707
     },
     "Northern Mariana Islands": {
@@ -845,15 +849,15 @@
       "matches": 30
     },
     "Norway": {
-      "rating": 2014.7,
+      "rating": 2014.8,
       "matches": 878
     },
     "Occitania": {
-      "rating": 1686.8,
+      "rating": 1684.3,
       "matches": 33
     },
     "Oman": {
-      "rating": 1575.4,
+      "rating": 1575.5,
       "matches": 543
     },
     "Orkney": {
@@ -861,8 +865,8 @@
       "matches": 28
     },
     "Padania": {
-      "rating": 1686.6,
-      "matches": 45
+      "rating": 1660.9,
+      "matches": 48
     },
     "Pakistan": {
       "rating": 1121.9,
@@ -873,15 +877,15 @@
       "matches": 2
     },
     "Palestine": {
-      "rating": 1589.7,
+      "rating": 1589.8,
       "matches": 249
     },
     "Panama": {
-      "rating": 1771.5,
+      "rating": 1771.6,
       "matches": 542
     },
     "Panjab": {
-      "rating": 1585.7,
+      "rating": 1585.3,
       "matches": 19
     },
     "Papua New Guinea": {
@@ -905,59 +909,63 @@
       "matches": 342
     },
     "Poland": {
-      "rating": 1780.2,
+      "rating": 1780.4,
       "matches": 892
     },
     "Portugal": {
-      "rating": 2052.4,
+      "rating": 2052.6,
       "matches": 700
     },
     "Provence": {
-      "rating": 1461.2,
+      "rating": 1460.3,
       "matches": 23
     },
     "Puerto Rico": {
-      "rating": 1347.8,
+      "rating": 1347.9,
       "matches": 163
     },
     "Qatar": {
-      "rating": 1544.5,
+      "rating": 1544.6,
       "matches": 638
     },
     "Quebec": {
-      "rating": 1531.2,
+      "rating": 1531.3,
       "matches": 3
     },
     "Raetia": {
-      "rating": 1408.6,
-      "matches": 26
+      "rating": 1385.2,
+      "matches": 29
     },
     "Republic of Ireland": {
-      "rating": 1763.6,
+      "rating": 1763.8,
       "matches": 633
     },
     "Republic of St. Pauli": {
-      "rating": 1480.8,
+      "rating": 1480.9,
       "matches": 4
     },
     "Rhodes": {
-      "rating": 1591.7,
+      "rating": 1591.9,
       "matches": 18
     },
     "Romani people": {
-      "rating": 1463.8,
+      "rating": 1463.3,
       "matches": 7
     },
     "Romania": {
-      "rating": 1700.7,
+      "rating": 1701,
       "matches": 766
     },
+    "Rouet-Provence": {
+      "rating": 1465.4,
+      "matches": 3
+    },
     "Russia": {
-      "rating": 1846,
+      "rating": 1846.1,
       "matches": 749
     },
     "Rwanda": {
-      "rating": 1448.6,
+      "rating": 1448.7,
       "matches": 280
     },
     "Ryūkyū": {
@@ -969,7 +977,7 @@
       "matches": 124
     },
     "Saare County": {
-      "rating": 1340.8,
+      "rating": 1340.9,
       "matches": 35
     },
     "Saarland": {
@@ -981,7 +989,7 @@
       "matches": 10
     },
     "Saint Helena": {
-      "rating": 1348.6,
+      "rating": 1348.5,
       "matches": 8
     },
     "Saint Kitts and Nevis": {
@@ -1009,7 +1017,7 @@
       "matches": 71
     },
     "San Marino": {
-      "rating": 902.4,
+      "rating": 902.5,
       "matches": 225
     },
     "Sark": {
@@ -1017,7 +1025,7 @@
       "matches": 4
     },
     "Saudi Arabia": {
-      "rating": 1706.3,
+      "rating": 1706.4,
       "matches": 744
     },
     "Saugeais": {
@@ -1025,11 +1033,11 @@
       "matches": 1
     },
     "Scotland": {
-      "rating": 1815.7,
+      "rating": 1815.9,
       "matches": 854
     },
     "Sealand": {
-      "rating": 1483.9,
+      "rating": 1483.7,
       "matches": 12
     },
     "Seborga": {
@@ -1037,15 +1045,15 @@
       "matches": 1
     },
     "Senegal": {
-      "rating": 1881.7,
+      "rating": 1881.8,
       "matches": 642
     },
     "Serbia": {
-      "rating": 1793.1,
+      "rating": 1793.2,
       "matches": 831
     },
     "Seychelles": {
-      "rating": 1011.5,
+      "rating": 1011.6,
       "matches": 176
     },
     "Shetland": {
@@ -1061,7 +1069,7 @@
       "matches": 8
     },
     "Singapore": {
-      "rating": 1295.6,
+      "rating": 1295.7,
       "matches": 696
     },
     "Sint Maarten": {
@@ -1069,11 +1077,11 @@
       "matches": 60
     },
     "Slovakia": {
-      "rating": 1735.2,
+      "rating": 1735.5,
       "matches": 367
     },
     "Slovenia": {
-      "rating": 1742.3,
+      "rating": 1742.5,
       "matches": 317
     },
     "Solomon Islands": {
@@ -1081,11 +1089,11 @@
       "matches": 214
     },
     "Somalia": {
-      "rating": 1060.9,
+      "rating": 1061,
       "matches": 124
     },
     "Somaliland": {
-      "rating": 1477.7,
+      "rating": 1476.6,
       "matches": 6
     },
     "South Africa": {
@@ -1093,15 +1101,15 @@
       "matches": 484
     },
     "South Korea": {
-      "rating": 1842.9,
+      "rating": 1843,
       "matches": 1010
     },
     "South Ossetia": {
-      "rating": 1475.7,
+      "rating": 1475.9,
       "matches": 17
     },
     "South Sudan": {
-      "rating": 1271.2,
+      "rating": 1271.3,
       "matches": 78
     },
     "South Yemen": {
@@ -1109,19 +1117,19 @@
       "matches": 3
     },
     "Spain": {
-      "rating": 2253.9,
-      "matches": 789
+      "rating": 2296.3,
+      "matches": 790
     },
     "Sri Lanka": {
       "rating": 1012.5,
       "matches": 251
     },
     "Sudan": {
-      "rating": 1476.3,
+      "rating": 1476.4,
       "matches": 469
     },
     "Suriname": {
-      "rating": 1586,
+      "rating": 1586.1,
       "matches": 399
     },
     "Surrey": {
@@ -1129,11 +1137,11 @@
       "matches": 1
     },
     "Sweden": {
-      "rating": 1798.5,
+      "rating": 1798.7,
       "matches": 1105
     },
     "Switzerland": {
-      "rating": 2008.4,
+      "rating": 2008.6,
       "matches": 890
     },
     "Syria": {
@@ -1141,12 +1149,12 @@
       "matches": 484
     },
     "Székely Land": {
-      "rating": 1495.2,
+      "rating": 1494.7,
       "matches": 27
     },
     "Sápmi": {
-      "rating": 1487.3,
-      "matches": 29
+      "rating": 1478.8,
+      "matches": 31
     },
     "São Tomé and Príncipe": {
       "rating": 1182,
@@ -1161,35 +1169,31 @@
       "matches": 245
     },
     "Tajikistan": {
-      "rating": 1439.2,
+      "rating": 1439.3,
       "matches": 201
     },
     "Tamil Eelam": {
-      "rating": 1588.2,
+      "rating": 1587.9,
       "matches": 28
     },
     "Tanzania": {
-      "rating": 1418.9,
+      "rating": 1419,
       "matches": 599
     },
     "Thailand": {
-      "rating": 1535.6,
+      "rating": 1535.7,
       "matches": 865
     },
     "Tibet": {
-      "rating": 1278.2,
+      "rating": 1278.9,
       "matches": 21
-    },
-    "Ticino": {
-      "rating": 1409.8,
-      "matches": 2
     },
     "Timor-Leste": {
       "rating": 905.4,
       "matches": 86
     },
     "Togo": {
-      "rating": 1503.3,
+      "rating": 1503.4,
       "matches": 447
     },
     "Tonga": {
@@ -1201,15 +1205,15 @@
       "matches": 753
     },
     "Tunisia": {
-      "rating": 1662.3,
+      "rating": 1662.4,
       "matches": 681
     },
     "Turkey": {
-      "rating": 1921,
+      "rating": 1921.2,
       "matches": 645
     },
     "Turkmenistan": {
-      "rating": 1388.4,
+      "rating": 1388.5,
       "matches": 175
     },
     "Turks and Caicos Islands": {
@@ -1221,7 +1225,7 @@
       "matches": 39
     },
     "Two Sicilies": {
-      "rating": 1405,
+      "rating": 1404.3,
       "matches": 6
     },
     "Uganda": {
@@ -1229,15 +1233,15 @@
       "matches": 685
     },
     "Ukraine": {
-      "rating": 1848,
+      "rating": 1848.2,
       "matches": 338
     },
     "United Arab Emirates": {
-      "rating": 1667,
+      "rating": 1667.1,
       "matches": 612
     },
     "United Koreans in Japan": {
-      "rating": 1502.2,
+      "rating": 1502,
       "matches": 12
     },
     "United States Virgin Islands": {
@@ -1245,7 +1249,7 @@
       "matches": 78
     },
     "United States": {
-      "rating": 1842.5,
+      "rating": 1842.6,
       "matches": 795
     },
     "Uruguay": {
@@ -1253,7 +1257,7 @@
       "matches": 973
     },
     "Uzbekistan": {
-      "rating": 1731.8,
+      "rating": 1731.9,
       "matches": 357
     },
     "Vanuatu": {
@@ -1261,11 +1265,11 @@
       "matches": 214
     },
     "Vatican City": {
-      "rating": 1411.2,
+      "rating": 1410.3,
       "matches": 8
     },
     "Venezuela": {
-      "rating": 1825.1,
+      "rating": 1825.2,
       "matches": 460
     },
     "Vietnam Republic": {
@@ -1277,7 +1281,7 @@
       "matches": 297
     },
     "Wales": {
-      "rating": 1744.5,
+      "rating": 1744.7,
       "matches": 726
     },
     "Wallis Islands and Futuna": {
@@ -1289,7 +1293,7 @@
       "matches": 2
     },
     "Western Armenia": {
-      "rating": 1518.8,
+      "rating": 1518.3,
       "matches": 16
     },
     "Western Australia": {
@@ -1301,7 +1305,7 @@
       "matches": 34
     },
     "Western Sahara": {
-      "rating": 1384.7,
+      "rating": 1384.5,
       "matches": 9
     },
     "Yemen DPR": {
@@ -1309,15 +1313,15 @@
       "matches": 25
     },
     "Yemen": {
-      "rating": 1307.9,
+      "rating": 1308,
       "matches": 266
     },
     "Ynys Môn": {
-      "rating": 1639.8,
+      "rating": 1639.9,
       "matches": 67
     },
     "Yorkshire": {
-      "rating": 1553.3,
+      "rating": 1553.2,
       "matches": 7
     },
     "Yoruba Nation": {
@@ -1325,19 +1329,19 @@
       "matches": 2
     },
     "Zambia": {
-      "rating": 1551.4,
+      "rating": 1551.5,
       "matches": 793
     },
     "Zanzibar": {
-      "rating": 1534.8,
+      "rating": 1535.4,
       "matches": 209
     },
     "Zimbabwe": {
-      "rating": 1476.6,
+      "rating": 1476.7,
       "matches": 496
     },
     "Åland Islands": {
-      "rating": 1473.5,
+      "rating": 1473.6,
       "matches": 51
     }
   }
