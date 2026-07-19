@@ -1,8 +1,8 @@
 {
-  "trainedAt": "2026-07-18T22:11:08.932Z",
+  "trainedAt": "2026-07-19T22:13:03.742Z",
   "source": "https://raw.githubusercontent.com/martj42/international_results/master/results.csv",
-  "totalMatches": 49518,
-  "lastMatchDate": "2026-07-15",
+  "totalMatches": 49519,
+  "lastMatchDate": "2026-07-18",
   "teams": {
     "Abkhazia": {
       "rating": 1628.5,
@@ -369,8 +369,8 @@
       "matches": 22
     },
     "England": {
-      "rating": 2147.3,
-      "matches": 1097
+      "rating": 2197.8,
+      "matches": 1098
     },
     "Equatorial Guinea": {
       "rating": 1445.5,
@@ -413,8 +413,8 @@
       "matches": 818
     },
     "France": {
-      "rating": 2190.5,
-      "matches": 942
+      "rating": 2139.9,
+      "matches": 943
     },
     "Franconia": {
       "rating": 1478.1,
