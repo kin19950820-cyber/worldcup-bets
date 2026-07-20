@@ -105,14 +105,45 @@ export default async function QuantPage() {
             good={totalValueBets > 0}
           />
         </div>
+        <div className="border-t border-slate-800 pt-3">
+          <div className="mb-2 flex items-center justify-between">
+            <h3 className="text-xs font-semibold text-slate-400">
+              英超模型（球會賽）
+            </h3>
+            <span className="text-[11px] text-slate-600">
+              {meta.club.totalMatches.toLocaleString()} 場英格蘭聯賽 · 截至 {meta.club.lastMatchDate}
+            </span>
+          </div>
+          <div className="grid grid-cols-2 gap-2 text-xs sm:grid-cols-4">
+            <MetaTile
+              label="回測 Brier"
+              value={meta.club.backtest.brier.toFixed(3)}
+            />
+            <MetaTile
+              label={`回測命中率（${meta.club.backtest.matches} 場）`}
+              value={percent(meta.club.backtest.accuracy)}
+            />
+            <MetaTile
+              label={`回測 ROI（EV≥${percent(meta.club.backtest.roi.evThreshold, 0)}，${meta.club.backtest.roi.bets} 注）`}
+              value={percent(meta.club.backtest.roi.roi)}
+              good={meta.club.backtest.roi.roi > 0}
+            />
+            <MetaTile
+              label="對收盤賠率有優勢？"
+              value={meta.club.backtest.roi.roi > 0 ? "有" : "冇"}
+              good={meta.club.backtest.roi.roi > 0}
+            />
+          </div>
+        </div>
         <p className="text-[11px] leading-relaxed text-slate-600">
-          回測為 {meta.backtest.evalStart} 起的走前（walk-forward）驗證，全部樣本外。模型機率為獨立統計估算，並非複製馬會賠率；投注建議僅供參考。
+          回測為 {meta.backtest.evalStart} 起的走前（walk-forward）驗證，全部樣本外。模型機率為獨立統計估算，並非複製馬會賠率。英超模型附有對
+          Bet365 收盤賠率的真實 ROI 回測——結果為負，即模型未能跑贏市場收盤價；英超價值標記只可作參考，切勿當成必勝提示。
         </p>
       </div>
 
       {outOfScopeCount > 0 && (
         <p className="text-xs text-slate-600">
-          另有 {outOfScopeCount} 場賽事不在模型範圍（模型目前只涵蓋國際賽，未包括球會賽事）。
+          另有 {outOfScopeCount} 場賽事不在模型範圍。
         </p>
       )}
 
@@ -135,7 +166,14 @@ export default async function QuantPage() {
                 {match.stage && ` · ${match.stage}`}
               </p>
             </div>
-            {analysis && <ConfidencePill level={analysis.confidence} />}
+            {analysis && (
+              <div className="flex shrink-0 items-center gap-1.5">
+                <span className="rounded-full bg-slate-800 px-2 py-0.5 text-[11px] text-slate-400">
+                  {analysis.modelScope === "club" ? "英超模型" : "國際賽模型"}
+                </span>
+                <ConfidencePill level={analysis.confidence} />
+              </div>
+            )}
           </div>
 
           {!analysis ? (
@@ -207,7 +245,14 @@ export default async function QuantPage() {
                   暫無可解析的馬會盤口（支援：主客和 / 全場讓球 / 全場入球大細 / 全場波膽）。
                 </p>
               ) : (
-                <OptionsTable rows={rows.slice(0, MAX_ROWS_PER_MATCH)} balance={balance} />
+                <>
+                  <OptionsTable rows={rows.slice(0, MAX_ROWS_PER_MATCH)} balance={balance} />
+                  {analysis.modelScope === "club" && (
+                    <p className="text-[11px] text-amber-400/70">
+                      英超模型回測未能跑贏收盤賠率，價值標記僅供參考。
+                    </p>
+                  )}
+                </>
               )}
             </>
           )}

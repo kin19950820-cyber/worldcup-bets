@@ -51,14 +51,33 @@ export const HISTORICAL_MERGES: Record<string, string> = {
   "Türkiye": "Turkey",
 };
 
-export function resolveDatasetTeam(
+// Maps (normalized) football-data.org club short names to football-data.co.uk
+// dataset names.
+const CLUB_ALIASES: Record<string, string> = {
+  wolverhampton: "Wolves",
+  "brighton hove": "Brighton",
+  "leeds united": "Leeds",
+  "sheffield utd": "Sheffield United",
+  "luton town": "Luton",
+  "ipswich town": "Ipswich",
+  "newcastle united": "Newcastle",
+  "west ham united": "West Ham",
+  "tottenham hotspur": "Tottenham",
+  "manchester city": "Man City",
+  "manchester united": "Man United",
+  "nottingham forest": "Nott'm Forest",
+  "afc bournemouth": "Bournemouth",
+};
+
+function resolveTeamName(
   appName: string,
-  ratingKeys: string[]
+  ratingKeys: string[],
+  aliases: Record<string, string>
 ): string | null {
   const normalized = normalizeTeamName(appName);
   if (!normalized) return null;
 
-  const aliased = DATASET_ALIASES[normalized];
+  const aliased = aliases[normalized];
   if (aliased && ratingKeys.includes(aliased)) return aliased;
 
   const exact = ratingKeys.find(
@@ -72,6 +91,14 @@ export function resolveDatasetTeam(
     return keyNorm.includes(normalized) || normalized.includes(keyNorm);
   });
   return contains.length === 1 ? contains[0] : null;
+}
+
+export function resolveDatasetTeam(appName: string, ratingKeys: string[]) {
+  return resolveTeamName(appName, ratingKeys, DATASET_ALIASES);
+}
+
+export function resolveClubTeam(appName: string, ratingKeys: string[]) {
+  return resolveTeamName(appName, ratingKeys, CLUB_ALIASES);
 }
 
 // 2026 World Cup host nations: their home fixtures are non-neutral.

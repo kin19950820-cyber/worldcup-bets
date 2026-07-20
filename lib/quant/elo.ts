@@ -9,6 +9,14 @@
 export const ELO_INITIAL = 1500;
 export const ELO_HOME_ADVANTAGE = 100;
 
+// Club football uses a flat K and a smaller home advantage (clubElo-style).
+export const CLUB_ELO_K = 20;
+export const CLUB_ELO_HOME_ADVANTAGE = 70;
+
+export function eloWinExpectancy(ratingDiff: number) {
+  return 1 / (Math.pow(10, -ratingDiff / 400) + 1);
+}
+
 export function eloKFactor(tournament: string): number {
   const t = tournament.toLowerCase();
   if (t.includes("fifa world cup") && !t.includes("qualification")) return 60;

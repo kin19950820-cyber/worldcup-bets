@@ -35,9 +35,25 @@ lib/quant/                    pure, dependency-free TypeScript
 app/(main)/quant/page.tsx     dashboard (server component, zh-Hant)
 ```
 
-Data source: [martj42/international_results](https://github.com/martj42/international_results)
-— every official international match since 1872 (~49,500 completed matches),
-free and updated continuously.
+Data sources:
+- Internationals: [martj42/international_results](https://github.com/martj42/international_results)
+  — every official international match since 1872 (~49,500 completed matches).
+- Clubs (英超模型): [football-data.co.uk](https://www.football-data.co.uk) —
+  Premier League + Championship since 2010 (~15,000 matches) **including
+  closing odds**, which enables a genuine ROI backtest. Club artifacts are
+  `club-ratings.json` / `club-params.json` / `club-backtest.json`; club Elo
+  uses K = 20, home advantage 70, and a two-parameter GLM (home advantage
+  absorbed into the intercepts). `analyzeFixture` routes to the club model
+  when the teams resolve as clubs rather than national teams.
+
+**Club model honesty note:** the club backtest bets flat stakes on any
+outcome with model EV ≥ 5% against Bet365 closing odds. Result over
+2024-07 → 2026-05 (760 E0 matches, 426 bets): **ROI −15.1%**. A ratings-only
+model does *not* beat the closing line in a market as efficient as the EPL —
+this is the expected result, it is displayed on the dashboard, and club
+value flags should be read as "model disagrees with market", not "free
+money". The international model cannot be ROI-backtested (no free historical
+odds) but shows strong probabilistic skill vs baseline.
 
 ## Retraining
 
