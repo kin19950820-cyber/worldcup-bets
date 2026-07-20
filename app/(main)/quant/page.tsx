@@ -46,7 +46,7 @@ export default async function QuantPage() {
   const optionsByMatchId = await getBetOptionsForMatches(fixtures);
   const meta = getModelMeta();
 
-  const boards = fixtures.map((match) => {
+  const allBoards = fixtures.map((match) => {
     const analysis = analyzeFixture(match.home_team, match.away_team);
     const options = optionsByMatchId[match.id] ?? [];
     const rows = analysis
@@ -54,6 +54,10 @@ export default async function QuantPage() {
       : [];
     return { match, analysis, rows };
   });
+  // The model is trained on international matches; club fixtures (英超 etc.)
+  // are outside its scope and are summarised rather than listed.
+  const boards = allBoards.filter((board) => board.analysis !== null);
+  const outOfScopeCount = allBoards.length - boards.length;
 
   const totalValueBets = boards.reduce(
     (sum, board) => sum + board.rows.filter((row) => row.isValue).length,
@@ -105,6 +109,12 @@ export default async function QuantPage() {
           回測為 {meta.backtest.evalStart} 起的走前（walk-forward）驗證，全部樣本外。模型機率為獨立統計估算，並非複製馬會賠率；投注建議僅供參考。
         </p>
       </div>
+
+      {outOfScopeCount > 0 && (
+        <p className="text-xs text-slate-600">
+          另有 {outOfScopeCount} 場賽事不在模型範圍（模型目前只涵蓋國際賽，未包括球會賽事）。
+        </p>
+      )}
 
       {boards.length === 0 && (
         <div className="card p-12 text-center text-slate-500">

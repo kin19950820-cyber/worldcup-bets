@@ -25,7 +25,7 @@ export const SEASONS: Season[] = [
   },
   {
     id: 2,
-    name: "第二季",
+    name: "第二季 · 英超 2026/27",
     start: "2026-07-23T00:00:00+08:00",
     end: null,
     ended: false,

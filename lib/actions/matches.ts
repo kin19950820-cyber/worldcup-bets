@@ -30,63 +30,86 @@ export async function getAllMatches() {
   return { matches: data ?? [] };
 }
 
+// Season 2 competitions synced from football-data.org. The World Cup (season
+// 1) has ended; its matches stay in the database untouched. A rolling window
+// (recent scores + upcoming fixtures) keeps the list manageable and lets the
+// daily cron advance through the season automatically.
+const SYNC_COMPETITIONS = [{ code: "PL", label: "英超" }];
+const SYNC_PAST_DAYS = 7;
+const SYNC_FUTURE_DAYS = 30;
+const UPSERT_CHUNK_SIZE = 200;
+
 export async function syncMatches() {
   const service = createServiceClient();
   const apiKey = process.env.FOOTBALL_API_KEY;
 
   if (!apiKey) return { error: "未配置 FOOTBALL_API_KEY" };
 
+  const dateFrom = new Date(Date.now() - SYNC_PAST_DAYS * 86400000)
+    .toISOString()
+    .slice(0, 10);
+  const dateTo = new Date(Date.now() + SYNC_FUTURE_DAYS * 86400000)
+    .toISOString()
+    .slice(0, 10);
+
   try {
-    // football-data.org v4 API — WC competition
-    const res = await fetch(
-      "https://api.football-data.org/v4/competitions/WC/matches",
-      {
-        headers: { "X-Auth-Token": apiKey },
-        next: { revalidate: 0 },
-      }
-    );
-
-    if (!res.ok) {
-      const body = await res.text();
-      return { error: `API 錯誤 ${res.status}: ${body.slice(0, 200)}` };
-    }
-
-    const json = await res.json();
-    const matches: Record<string, unknown>[] = json.matches ?? [];
-
     let synced = 0;
     let failed = 0;
+    let total = 0;
 
-    for (const m of matches) {
-      const homeTeam = (m.homeTeam as Record<string, string>)?.shortName
-        || (m.homeTeam as Record<string, string>)?.name
-        || "TBD";
-      const awayTeam = (m.awayTeam as Record<string, string>)?.shortName
-        || (m.awayTeam as Record<string, string>)?.name
-        || "TBD";
-      const score = m.score as Record<string, Record<string, number | null>> | undefined;
-
-      const { error } = await service.from("matches").upsert(
+    for (const competition of SYNC_COMPETITIONS) {
+      const res = await fetch(
+        `https://api.football-data.org/v4/competitions/${competition.code}/matches?dateFrom=${dateFrom}&dateTo=${dateTo}`,
         {
+          headers: { "X-Auth-Token": apiKey },
+          next: { revalidate: 0 },
+        }
+      );
+
+      if (!res.ok) {
+        const body = await res.text();
+        return { error: `API 錯誤 ${res.status}: ${body.slice(0, 200)}` };
+      }
+
+      const json = await res.json();
+      const matches: Record<string, unknown>[] = json.matches ?? [];
+      total += matches.length;
+
+      const rows = matches.map((m) => {
+        const homeTeam = (m.homeTeam as Record<string, string>)?.shortName
+          || (m.homeTeam as Record<string, string>)?.name
+          || "TBD";
+        const awayTeam = (m.awayTeam as Record<string, string>)?.shortName
+          || (m.awayTeam as Record<string, string>)?.name
+          || "TBD";
+        const score = m.score as Record<string, Record<string, number | null>> | undefined;
+        const matchday = m.matchday as number | undefined;
+
+        return {
           external_match_id: String(m.id),
           home_team: homeTeam,
           away_team: awayTeam,
           kickoff_time: m.utcDate as string,
-          stage: (m.stage as string) ?? null,
-          group_name: (m.group as string) ?? null,
+          stage: competition.label,
+          group_name: matchday ? `第 ${matchday} 輪` : ((m.group as string) ?? null),
           status: (m.status as string) ?? "SCHEDULED",
           score_home: score?.fullTime?.home ?? null,
           score_away: score?.fullTime?.away ?? null,
           updated_at: new Date().toISOString(),
-        },
-        { onConflict: "external_match_id" }
-      );
+        };
+      });
 
-      if (error) failed++;
-      else synced++;
+      for (let index = 0; index < rows.length; index += UPSERT_CHUNK_SIZE) {
+        const chunk = rows.slice(index, index + UPSERT_CHUNK_SIZE);
+        const { error } = await service
+          .from("matches")
+          .upsert(chunk, { onConflict: "external_match_id" });
+        if (error) failed += chunk.length;
+        else synced += chunk.length;
+      }
     }
 
-    return { success: true, synced, failed, total: matches.length };
+    return { success: true, synced, failed, total };
   } catch (e) {
     return { error: `同步失敗：${String(e)}` };
   }
