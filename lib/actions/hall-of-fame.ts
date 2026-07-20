@@ -2,6 +2,7 @@
 
 import { createClient, createServiceClient } from "@/lib/supabase/server";
 import { calculateLoanBalance } from "@/lib/loans";
+import { classifyBetOutcome, computeStreaks } from "@/lib/bet-stats";
 import { getSeason, seasonWindow } from "@/lib/seasons";
 import { parseParlay } from "@/lib/parlay";
 import { formatCurrency } from "@/lib/utils";
@@ -71,6 +72,8 @@ export async function getHallOfFame(seasonId: number) {
     bestMultiplier: number;
     bestMultiplierDetail: string;
     endNetWorth: number;
+    longestWinStreak: number;
+    longestLossStreak: number;
   };
 
   const players: PlayerStats[] = profiles
@@ -103,6 +106,12 @@ export async function getHallOfFame(seasonId: number) {
         }
       }
 
+      const statusesAscending = bets
+        .filter((bet) => bet.status !== "pending")
+        .sort((a, b) => a.created_at.localeCompare(b.created_at))
+        .map((bet) => classifyBetOutcome(bet));
+      const streaks = computeStreaks(statusesAscending);
+
       const userTransactions = transactions.filter(
         (transaction) => transaction.user_id === profile.id
       );
@@ -129,6 +138,8 @@ export async function getHallOfFame(seasonId: number) {
         bestMultiplier,
         bestMultiplierDetail,
         endNetWorth: Math.round((endBalance - loanOwed) * 100) / 100,
+        longestWinStreak: streaks.longestWin,
+        longestLossStreak: streaks.longestLoss,
       };
     })
     .filter((player): player is PlayerStats => player !== null);
@@ -210,6 +221,47 @@ export async function getHallOfFame(seasonId: number) {
         name: p.name,
         value: `${((p.wins / p.settled) * 100).toFixed(0)}%`,
         detail: `${p.wins} 勝 / ${p.settled} 注`,
+      })),
+    },
+    {
+      key: "worst-win-rate",
+      icon: "🕯️",
+      title: "明燈獎",
+      description: `本季勝率最低（至少 ${MIN_SETTLED_FOR_WIN_RATE} 注已結算）`,
+      winners: topBy(
+        players.filter((p) => p.settled >= MIN_SETTLED_FOR_WIN_RATE),
+        (p) => p.wins / p.settled,
+        "min"
+      ).map((p) => ({
+        name: p.name,
+        value: `${((p.wins / p.settled) * 100).toFixed(0)}%`,
+        detail: `${p.wins} 勝 / ${p.settled} 注`,
+      })),
+    },
+    {
+      key: "win-streak",
+      icon: "🏅",
+      title: "連勝王",
+      description: "本季最長連勝",
+      winners: topBy(
+        players.filter((p) => p.longestWinStreak >= 2),
+        (p) => p.longestWinStreak
+      ).map((p) => ({
+        name: p.name,
+        value: `${p.longestWinStreak} 連勝`,
+      })),
+    },
+    {
+      key: "loss-streak",
+      icon: "🥶",
+      title: "連敗王",
+      description: "本季最長連敗",
+      winners: topBy(
+        players.filter((p) => p.longestLossStreak >= 2),
+        (p) => p.longestLossStreak
+      ).map((p) => ({
+        name: p.name,
+        value: `${p.longestLossStreak} 連敗`,
       })),
     },
   ].filter((award) => award.winners.length > 0);
