@@ -62,7 +62,7 @@ export default function StreakHighlights({
   if (!winLeader && !lossLeader) return null;
 
   return (
-    <div className="mb-6 grid grid-cols-2 gap-3">
+    <div className="grid grid-cols-2 gap-3">
       <HighlightCard
         icon="🔥"
         title="最長連勝王"

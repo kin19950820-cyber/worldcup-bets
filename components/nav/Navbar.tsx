@@ -22,6 +22,7 @@ const navItems = [
 
 const menuItems = [
   { href: "/quant", label: "量化分析", icon: "📈" },
+  { href: "/hall-of-fame", label: "名人堂", icon: "🏛️" },
 ];
 
 const adminItems = [

@@ -142,6 +142,7 @@ export type LeaderboardEntry = {
   longest_loss_streak: number;
   historical_high: number;
   historical_low: number;
+  is_active: boolean;
   recent_results: BetStatus[];
   balance_history: BalanceHistoryPoint[];
 };

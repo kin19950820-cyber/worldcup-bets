@@ -104,18 +104,17 @@ export async function getLeaderboard(): Promise<{ entries: LeaderboardEntry[] }>
   const loans = loansRes.data ?? [];
   const history = historyRes.data ?? [];
 
-  // Only show players who placed a bet within the last 3 days; anyone with no
-  // recent activity (or no bets at all) drops off the 龍虎榜.
+  // A player is "active" when they placed a bet within the last 3 days.
+  // All players are computed; the client decides whether to show inactive
+  // ones (default view keeps the active-only rule).
   const activeCutoff = Date.now() - 3 * 24 * 60 * 60 * 1000;
-  const activeProfiles = profiles.filter((p) =>
+  const isActivePlayer = (id: string) =>
     bets.some(
       (b) =>
-        b.user_id === p.id &&
-        new Date(b.created_at).getTime() >= activeCutoff
-    )
-  );
+        b.user_id === id && new Date(b.created_at).getTime() >= activeCutoff
+    );
 
-  const entries: LeaderboardEntry[] = activeProfiles.map((p) => {
+  const entries: LeaderboardEntry[] = profiles.map((p) => {
     const userBets = bets.filter((b) => b.user_id === p.id);
     const totalBorrowed = calculateLoanBalance(
       loans.filter((transaction) => transaction.user_id === p.id)
@@ -204,6 +203,7 @@ export async function getLeaderboard(): Promise<{ entries: LeaderboardEntry[] }>
       longest_loss_streak: longestLoss,
       historical_high: historicalHigh,
       historical_low: historicalLow,
+      is_active: isActivePlayer(p.id),
       recent_results: recentResults,
       balance_history: balanceHistory,
     };
