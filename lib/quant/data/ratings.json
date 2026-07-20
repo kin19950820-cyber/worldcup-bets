@@ -1,8 +1,8 @@
 {
-  "trainedAt": "2026-07-20T08:38:16.566Z",
+  "trainedAt": "2026-07-20T22:27:39.831Z",
   "source": "https://raw.githubusercontent.com/martj42/international_results/master/results.csv",
-  "totalMatches": 49518,
-  "lastMatchDate": "2026-07-15",
+  "totalMatches": 49520,
+  "lastMatchDate": "2026-07-19",
   "teams": {
     "Abkhazia": {
       "rating": 1628.5,
@@ -57,8 +57,8 @@
       "matches": 10
     },
     "Argentina": {
-      "rating": 2280,
-      "matches": 1076
+      "rating": 2251.4,
+      "matches": 1077
     },
     "Armenia": {
       "rating": 1447,
@@ -369,8 +369,8 @@
       "matches": 22
     },
     "England": {
-      "rating": 2147.3,
-      "matches": 1097
+      "rating": 2197.8,
+      "matches": 1098
     },
     "Equatorial Guinea": {
       "rating": 1445.5,
@@ -413,8 +413,8 @@
       "matches": 818
     },
     "France": {
-      "rating": 2190.5,
-      "matches": 942
+      "rating": 2139.9,
+      "matches": 943
     },
     "Franconia": {
       "rating": 1478.1,
@@ -1117,8 +1117,8 @@
       "matches": 3
     },
     "Spain": {
-      "rating": 2296.3,
-      "matches": 790
+      "rating": 2324.9,
+      "matches": 791
     },
     "Sri Lanka": {
       "rating": 1012.5,
