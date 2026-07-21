@@ -26,7 +26,7 @@ import {
 } from "@/lib/quant/teams";
 
 export type MatchAnalysis = {
-  modelScope: "international" | "club";
+  modelScope: "international" | "club" | "clubelo";
   homeTeam: string;
   awayTeam: string;
   homeRating: number;

@@ -46,6 +46,16 @@ Data sources:
   absorbed into the intercepts). `analyzeFixture` routes to the club model
   when the teams resolve as clubs rather than national teams.
 
+- European / other clubs (clubelo 模型): [clubelo.com](http://clubelo.com)
+  pan-European club Elo, fetched live from its Fixtures API (`lib/quant/clubelo.ts`).
+  clubelo already returns full goal-difference and exact-scoreline
+  distributions per fixture, which we map straight into `MatchAnalysis`, so
+  Champions League / Europa qualifiers and foreign leagues get the same
+  probability / EV / Kelly treatment. HKJC odds for these ad-hoc fixtures are
+  matched via `getBetOptionsForFixtures` (synthetic matches, no DB row needed);
+  `/quant` only lists clubelo fixtures HKJC is currently pricing. HTTP-only
+  endpoint, cached 1h.
+
 **Club model honesty note:** the club backtest bets flat stakes on any
 outcome with model EV ≥ 5% against Bet365 closing odds. Result over
 2024-07 → 2026-05 (760 E0 matches, 426 bets): **ROI −15.1%**. A ratings-only

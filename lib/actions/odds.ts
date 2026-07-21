@@ -940,6 +940,20 @@ function uniqueOptions(options: BetOption[]) {
   });
 }
 
+// Fetch HKJC options for ad-hoc fixtures not stored in the matches table
+// (e.g. clubelo European fixtures). Reuses the same team-name matching; keyed
+// by the caller-supplied id.
+export async function getBetOptionsForFixtures(
+  fixtures: Array<{
+    id: string;
+    home_team: string;
+    away_team: string;
+    kickoff_time: string;
+  }>
+) {
+  return getBetOptionsForMatches(fixtures as unknown as Match[]);
+}
+
 export async function getBetOptionsForMatches(matches: Match[]) {
   if (matches.length === 0) return {};
 
