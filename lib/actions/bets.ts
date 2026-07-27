@@ -3,7 +3,7 @@
 import { createClient, createServiceClient } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
 import type { BetType } from "@/lib/types";
-import { isMatchBettable } from "@/lib/match-status";
+import { isMatchBettable, BETTING_CLOSED_MESSAGE } from "@/lib/match-status";
 import {
   getParlayPossibleReturn,
   PARLAY_BET_TYPE,
@@ -45,7 +45,7 @@ export async function createBet(formData: FormData) {
 
   if (matchErr || !match) return { error: "找不到此賽事" };
   if (!isMatchBettable(match)) {
-    return { error: "此賽事已超過開賽 3 小時，不能投注" };
+    return { error: BETTING_CLOSED_MESSAGE };
   }
 
   // Check balance
@@ -177,7 +177,9 @@ export async function createParlay(legsInput: ParlayLegInput[], stakeInput: numb
     return !isMatchBettable(match);
   });
   if (invalidMatch) {
-    return { error: `${invalidMatch.home_team} 對 ${invalidMatch.away_team} 已超過開賽 3 小時，不能投注` };
+    return {
+      error: `${invalidMatch.home_team} 對 ${invalidMatch.away_team}：${BETTING_CLOSED_MESSAGE}`,
+    };
   }
 
   const totalOdds = Math.round(
