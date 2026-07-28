@@ -36,10 +36,38 @@ export function getSeason(id: number): Season | null {
   return SEASONS.find((season) => season.id === id) ?? null;
 }
 
-// Default view: the most recently ended season, else the latest season.
+// The single active (not-yet-ended) season. This is the app's working season
+// for all NEW matches, bets, transactions and loans.
+export function getActiveSeason(): Season {
+  return (
+    SEASONS.find((season) => !season.ended) ?? SEASONS[SEASONS.length - 1]
+  );
+}
+
+// Default view for season-scoped pages: always the ACTIVE season, never a
+// completed one, so players land on the live season by default.
 export function getDefaultSeason(): Season {
-  const ended = SEASONS.filter((season) => season.ended);
-  return ended.length > 0 ? ended[ended.length - 1] : SEASONS[SEASONS.length - 1];
+  return getActiveSeason();
+}
+
+// Which season a timestamp belongs to (by configured window). Used to backfill
+// and tag historical rows; new rows are tagged with getActiveSeason().id.
+export function seasonIdForDate(date: Date | string | number): number {
+  const ms = new Date(date).getTime();
+  for (const season of SEASONS) {
+    const { startMs, endMs } = seasonWindow(season);
+    if (ms >= startMs && ms < endMs) return season.id;
+  }
+  // Anything before the first season's start belongs to season 1 (legacy).
+  return SEASONS[0].id;
+}
+
+// Resolve a requested season id (e.g. from a query param) to a valid one,
+// defaulting to the active season.
+export function resolveViewSeasonId(requested: unknown): number {
+  const id = Number(requested);
+  if (SEASONS.some((season) => season.id === id)) return id;
+  return getActiveSeason().id;
 }
 
 export function seasonWindow(season: Season) {

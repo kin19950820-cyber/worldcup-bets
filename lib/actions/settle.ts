@@ -173,7 +173,9 @@ export async function settleBet(
     };
   }
 
-  const { data, error } = await service.rpc("settle_bet", {
+  // Season 2: debt-first repayment happens atomically inside the RPC. Falls
+  // back to the legacy path only until the phase-2 migration is applied.
+  const { data, error } = await service.rpc("settle_bet_season2", {
     p_bet_id: betId,
     p_result: result,
   });
