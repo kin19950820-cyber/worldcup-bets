@@ -126,6 +126,8 @@ export type BalanceHistoryPoint = {
 export type LeaderboardEntry = {
   id: string;
   display_name: string;
+  group_id: string | null;
+  group_name: string | null;
   current_balance: number;
   net_balance: number;
   total_borrowed: number;

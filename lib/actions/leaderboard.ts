@@ -21,7 +21,9 @@ export async function getLeaderboard(): Promise<{ entries: LeaderboardEntry[] }>
   const [profilesRes, betsRes, loansRes, historyRes] = await Promise.all([
     supabase
       .from("profiles")
-      .select("id, display_name, current_balance, starting_fund, created_at"),
+      .select(
+        "id, display_name, current_balance, starting_fund, created_at, group_id, groups(name)"
+      ),
     supabase
       .from("bets")
       .select("id, user_id, bet_type, status, stake, payout, odds, created_at, settled_at"),
@@ -121,9 +123,14 @@ export async function getLeaderboard(): Promise<{ entries: LeaderboardEntry[] }>
       Math.min(...netBalanceHistory, netBalance).toFixed(2)
     );
 
+    const groups = p.groups as unknown as { name: string }[] | { name: string } | null;
+    const group = Array.isArray(groups) ? groups[0] ?? null : groups;
+
     return {
       id: p.id,
       display_name: p.display_name,
+      group_id: p.group_id,
+      group_name: group?.name ?? null,
       current_balance: p.current_balance,
       net_balance: netBalance,
       total_borrowed: totalBorrowed,
