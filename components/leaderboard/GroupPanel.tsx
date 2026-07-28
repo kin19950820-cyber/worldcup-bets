@@ -46,6 +46,16 @@ export default function GroupPanel({ myGroup }: { myGroup: MyGroup | null }) {
     });
   };
 
+  const handleCopyCode = async () => {
+    if (!myGroup) return;
+    try {
+      await navigator.clipboard.writeText(myGroup.code);
+      toast.success("已複製邀請代碼");
+    } catch {
+      toast.error("複製失敗，請手動選取代碼");
+    }
+  };
+
   if (myGroup) {
     return (
       <div className="card p-4 space-y-3">
@@ -60,12 +70,19 @@ export default function GroupPanel({ myGroup }: { myGroup: MyGroup | null }) {
             離開群組
           </button>
         </div>
-        <p className="text-xs text-slate-500">
+        <div className="flex items-center gap-2 text-xs text-slate-500">
           邀請代碼：
-          <span className="ml-1 font-mono font-semibold text-brand-400">
+          <span className="font-mono font-semibold text-brand-400">
             {myGroup.code}
           </span>
-        </p>
+          <button
+            type="button"
+            onClick={handleCopyCode}
+            className="rounded-md bg-slate-800 px-2 py-1 text-[11px] text-slate-300 hover:bg-slate-700 hover:text-white"
+          >
+            📋 複製
+          </button>
+        </div>
         <p className="text-xs text-slate-500">
           {myGroup.members.length} 位成員：
           {myGroup.members.map((m) => m.display_name).join("、")}
