@@ -336,6 +336,7 @@ declare
   v_bet         public.bets%rowtype;
   v_season      public.seasons%rowtype;
   v_player      public.season_players%rowtype;
+  v_player_name text;
   v_payout      numeric;
   v_repaid      numeric;
   v_cash        numeric;
@@ -345,6 +346,7 @@ begin
   select * into v_bet from public.bets where id = p_bet_id for update;
   if not found then raise exception 'BET_NOT_FOUND'; end if;
   if v_bet.status <> 'pending' then raise exception 'ALREADY_SETTLED'; end if;
+  select display_name into v_player_name from public.profiles where id = v_bet.user_id;
 
   select * into v_season from public.seasons where id = v_bet.season_id;
   if v_season.is_closed then raise exception 'SEASON_CLOSED'; end if;
@@ -398,7 +400,8 @@ begin
 
   return jsonb_build_object(
     'payout', v_payout, 'debt_repaid', v_repaid, 'cash_credited', v_cash,
-    'outstanding_debt', v_new_debt, 'new_balance', v_new_balance);
+    'outstanding_debt', v_new_debt, 'new_balance', v_new_balance,
+    'stake', v_bet.stake, 'player_name', v_player_name);
 end;
 $$;
 
