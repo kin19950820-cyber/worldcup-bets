@@ -142,9 +142,12 @@ select
   coalesce(p.starting_fund, 500),
   p.current_balance,
   0,
-  (select count(*) from public.transactions t
-     where t.user_id = p.id and t.type in ('loan', 'loan_principal')
-       and t.created_at < timestamptz '2026-07-23T00:00:00+08:00'),
+  least(
+    (select count(*) from public.transactions t
+       where t.user_id = p.id and t.type in ('loan', 'loan_principal')
+         and t.created_at < timestamptz '2026-07-23T00:00:00+08:00'),
+    2
+  ),
   'closed'
 from public.profiles p
 on conflict (season_id, user_id) do nothing;
