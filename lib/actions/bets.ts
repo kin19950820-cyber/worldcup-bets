@@ -4,6 +4,22 @@ import { createClient, createServiceClient } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
 import type { BetType } from "@/lib/types";
 import { isMatchBettable, BETTING_CLOSED_MESSAGE } from "@/lib/match-status";
+import { validateStake } from "@/lib/season2-loans";
+import { getActiveSeason } from "@/lib/seasons";
+
+// Outstanding Season 2 debt for a user (0 when no season_players row yet).
+async function getActiveSeasonDebt(
+  service: ReturnType<typeof createServiceClient>,
+  userId: string
+): Promise<number> {
+  const { data } = await service
+    .from("season_players")
+    .select("outstanding_debt")
+    .eq("user_id", userId)
+    .eq("season_id", getActiveSeason().id)
+    .maybeSingle();
+  return Number(data?.outstanding_debt ?? 0);
+}
 import {
   getParlayPossibleReturn,
   PARLAY_BET_TYPE,
@@ -48,7 +64,7 @@ export async function createBet(formData: FormData) {
     return { error: BETTING_CLOSED_MESSAGE };
   }
 
-  // Check balance
+  // Check balance + Season 2 debt restrictions.
   const { data: profile } = await supabase
     .from("profiles")
     .select("current_balance")
@@ -56,8 +72,15 @@ export async function createBet(formData: FormData) {
     .single();
 
   if (!profile) return { error: "找不到用戶資料" };
-  if (profile.current_balance < stake)
-    return { error: `餘額不足，現時餘額：HK$${profile.current_balance.toFixed(2)}` };
+
+  const outstandingDebt = await getActiveSeasonDebt(service, user.id);
+  const stakeError = validateStake({
+    stake,
+    currentBalance: profile.current_balance,
+    outstandingDebt,
+    isParlay: false,
+  });
+  if (stakeError) return { error: stakeError };
 
   const possible_return = parseFloat((odds * stake).toFixed(2));
   const new_balance = parseFloat((profile.current_balance - stake).toFixed(2));
@@ -150,11 +173,15 @@ export async function createParlay(legsInput: ParlayLegInput[], stakeInput: numb
     return { error: "部分賽事不存在" };
   }
   if (!profile) return { error: "找不到玩家資料" };
-  if (profile.current_balance < stake) {
-    return {
-      error: `餘額不足，現時餘額：HK$${profile.current_balance.toFixed(2)}`,
-    };
-  }
+
+  const outstandingDebt = await getActiveSeasonDebt(service, user.id);
+  const parlayStakeError = validateStake({
+    stake,
+    currentBalance: profile.current_balance,
+    outstandingDebt,
+    isParlay: true,
+  });
+  if (parlayStakeError) return { error: parlayStakeError };
 
   const matchMap = new Map(matches.map((match) => [match.id, match]));
   const legs: ParlayLeg[] = legsInput.map((input, index) => {

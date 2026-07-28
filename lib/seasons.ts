@@ -62,6 +62,14 @@ export function seasonIdForDate(date: Date | string | number): number {
   return SEASONS[0].id;
 }
 
+// Resolve a requested season id (e.g. from a query param) to a valid one,
+// defaulting to the active season.
+export function resolveViewSeasonId(requested: unknown): number {
+  const id = Number(requested);
+  if (SEASONS.some((season) => season.id === id)) return id;
+  return getActiveSeason().id;
+}
+
 export function seasonWindow(season: Season) {
   return {
     startMs: new Date(season.start).getTime(),

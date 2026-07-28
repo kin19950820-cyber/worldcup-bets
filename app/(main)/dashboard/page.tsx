@@ -10,33 +10,32 @@ import {
 import { cn } from "@/lib/utils";
 import Link from "next/link";
 import MatchCountdown from "@/components/matches/MatchCountdown";
-import LoanCard from "@/components/loans/LoanCard";
+import Season2LoanCard from "@/components/loans/Season2LoanCard";
+import { getSeasonState } from "@/lib/actions/season";
 import FundTrendChart from "@/components/dashboard/FundTrendChart";
 import { parseParlay } from "@/lib/parlay";
 
 export const dynamic = "force-dynamic";
 
 export default async function DashboardPage() {
-  const data = await getDashboardData();
+  const [data, season] = await Promise.all([
+    getDashboardData(),
+    getSeasonState(),
+  ]);
   if (!data || !data.profile) redirect("/login");
 
   const {
     profile,
     pending_stake,
     possible_return,
-    total_borrowed,
-    loan_principal,
-    loan_interest,
-    loan_effective_weekly_rate,
     balance_history,
     recent_bets,
     upcoming_matches,
   } = data;
-  const profit =
-    profile.current_balance +
-    pending_stake -
-    profile.starting_fund -
-    total_borrowed;
+  // Season 2 net worth / profit come from the season_players ledger.
+  const profit = season
+    ? season.profitLoss
+    : profile.current_balance + pending_stake - profile.starting_fund;
 
   return (
     <div className="max-w-lg mx-auto px-4 py-6 space-y-6">
@@ -56,12 +55,16 @@ export default async function DashboardPage() {
 
       <FundTrendChart points={balance_history} />
 
-      <LoanCard
-        totalBorrowed={total_borrowed}
-        loanPrincipal={loan_principal}
-        loanInterest={loan_interest}
-        effectiveWeeklyRate={loan_effective_weekly_rate}
-      />
+      {season && (
+        <Season2LoanCard
+          currentBalance={season.currentBalance}
+          outstandingDebt={season.outstandingDebt}
+          loanCount={season.loanCount}
+          netWorth={season.netWorth}
+          eligible={season.eligibility.allowed}
+          reason={season.eligibility.reason}
+        />
+      )}
 
       {/* Stats Row */}
       <div className="grid grid-cols-2 gap-3">
