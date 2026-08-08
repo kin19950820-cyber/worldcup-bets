@@ -188,9 +188,11 @@ export default function LeaderboardTable({ entries }: { entries: LeaderboardEntr
                   <p className={cn("text-xs font-semibold", e.profit_loss >= 0 ? "profit-positive" : "profit-negative")}>
                     {formatProfitLoss(e.profit_loss)}
                   </p>
-                  {e.total_borrowed > 0 && (
+                  {(e.total_borrowed > 0 || e.loan_count > 0) && (
                     <p className="text-xs text-orange-400 mt-0.5">
-                      現金 {formatCurrency(e.current_balance)} · 借款 {formatCurrency(e.total_borrowed)}
+                      現金 {formatCurrency(e.current_balance)} · 借款{" "}
+                      {formatCurrency(e.total_borrowed)}
+                      {e.loan_count > 0 && `（${e.loan_count}/2）`}
                     </p>
                   )}
                   {e.pending_stake > 0 && (
@@ -249,9 +251,10 @@ export default function LeaderboardTable({ entries }: { entries: LeaderboardEntr
                   {" · "}
                   低 <span className="text-red-300">{formatCurrency(e.historical_low)}</span>
                 </span>
-                {e.total_borrowed > 0 && (
+                {(e.total_borrowed > 0 || e.loan_count > 0) && (
                   <span className="block text-xs text-orange-400">
                     借 {formatCurrency(e.total_borrowed)}
+                    {e.loan_count > 0 && `（${e.loan_count}/2）`}
                   </span>
                 )}
                 {e.pending_stake > 0 && (
