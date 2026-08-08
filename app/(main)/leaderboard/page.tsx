@@ -1,8 +1,7 @@
-import Link from "next/link";
 import { getLeaderboard } from "@/lib/actions/leaderboard";
 import { getMyGroup } from "@/lib/actions/groups";
-import { SEASONS, resolveViewSeasonId, getSeason } from "@/lib/seasons";
-import { cn } from "@/lib/utils";
+import { resolveViewSeasonId, getSeason } from "@/lib/seasons";
+import SeasonChips from "@/components/season/SeasonChips";
 import LeaderboardView from "@/components/leaderboard/LeaderboardView";
 
 export const dynamic = "force-dynamic";
@@ -27,27 +26,7 @@ export default async function LeaderboardPage({
         🏆 龍虎榜
       </h1>
 
-      <div className="flex flex-wrap gap-2 mb-6">
-        {SEASONS.map((item) => (
-          <Link
-            key={item.id}
-            href={`/leaderboard?season=${item.id}`}
-            className={cn(
-              "rounded-full border px-3 py-1.5 text-sm font-medium transition-colors",
-              item.id === seasonId
-                ? "border-brand-500/50 bg-brand-500/15 text-white"
-                : "border-slate-700 bg-slate-900/60 text-slate-400 hover:text-white"
-            )}
-          >
-            {item.name}
-            {item.ended && (
-              <span className="ml-2 rounded-full bg-slate-700 px-1.5 py-0.5 text-[10px] text-slate-300">
-                已完結
-              </span>
-            )}
-          </Link>
-        ))}
-      </div>
+      <SeasonChips basePath="/leaderboard" seasonId={seasonId} />
 
       <LeaderboardView
         entries={entries}

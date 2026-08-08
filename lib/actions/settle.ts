@@ -369,7 +369,10 @@ export async function settleParlayLeg(
   };
 }
 
-export async function getAllBetsForAdmin(statusFilter = "all") {
+export async function getAllBetsForAdmin(
+  statusFilter = "all",
+  seasonId?: number
+) {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return { bets: [] };
@@ -389,6 +392,7 @@ export async function getAllBetsForAdmin(statusFilter = "all") {
     )
     .order("created_at", { ascending: false });
 
+  if (typeof seasonId === "number") query = query.eq("season_id", seasonId);
   if (statusFilter !== "all") query = query.eq("status", statusFilter);
 
   const { data } = await query;
