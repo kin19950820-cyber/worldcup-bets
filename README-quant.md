@@ -51,8 +51,8 @@ outcome with model EV ≥ 5% against Bet365 closing odds. Result over
 2024-07 → 2026-05 (760 E0 matches, 426 bets): **ROI −15.1%**. A ratings-only
 model does *not* beat the closing line in a market as efficient as the EPL —
 this is the expected result, it is displayed on the dashboard, and club
-value flags should be read as "model disagrees with market", not "free
-money". The international model cannot be ROI-backtested (no free historical
+value flags and stake suggestions are disabled while validation ROI is
+non-positive. The international model cannot be ROI-backtested (no free historical
 odds) but shows strong probabilistic skill vs baseline.
 
 ## Retraining

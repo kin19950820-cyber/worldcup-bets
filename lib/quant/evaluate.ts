@@ -169,8 +169,11 @@ export function evaluateOptions(
           marketProbability !== null
             ? modelProbability - marketProbability
             : null,
-        kelly: ev > 0 && option.odds > 1 ? ev / (option.odds - 1) : 0,
-        isValue: ev >= VALUE_EV_THRESHOLD,
+        kelly:
+          analysis.stakingAllowed && ev > 0 && option.odds > 1
+            ? ev / (option.odds - 1)
+            : 0,
+        isValue: analysis.stakingAllowed && ev >= VALUE_EV_THRESHOLD,
       };
     })
     .sort((a, b) => b.ev - a.ev);

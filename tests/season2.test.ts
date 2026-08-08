@@ -13,6 +13,8 @@ import {
   getDefaultSeason,
   seasonIdForDate,
 } from "@/lib/seasons";
+import { evaluateOptions } from "@/lib/quant/evaluate";
+import type { MatchAnalysis } from "@/lib/quant/model";
 
 // --------------------------------------------------------------------------
 // Loan eligibility
@@ -227,5 +229,50 @@ describe("season configuration", () => {
   it("Season 2 players start at $500 (starting balance constant)", () => {
     // The starting balance the migration seeds; mirrored by the loan engine.
     expect(SEASON2_LOAN.eligibleBalanceBelow).toBeLessThan(500);
+  });
+});
+
+describe("quant recommendation safety gate", () => {
+  const analysis: MatchAnalysis = {
+    modelScope: "club",
+    homeTeam: "Home",
+    awayTeam: "Away",
+    homeRating: 1500,
+    awayRating: 1500,
+    homeMatches: 100,
+    awayMatches: 100,
+    neutralVenue: false,
+    lambdaHome: 1.5,
+    lambdaAway: 1,
+    probabilities: { home: 0.6, draw: 0.25, away: 0.15 },
+    expectedTotalGoals: 2.5,
+    topScores: [],
+    eloExpectancy: 0.5,
+    modelAgreement: 0.9,
+    confidence: "medium",
+    stakingAllowed: false,
+    marginDist: [],
+    totalDist: [],
+    matrix: [],
+  };
+
+  it("does not label positive-EV club options as value when validation failed", () => {
+    const [result] = evaluateOptions(
+      [{
+        id: "home",
+        market: "1x2",
+        bet_type: "主客和",
+        selection: "Home",
+        odds: 2,
+        updated_at: null,
+      }],
+      "Home",
+      "Away",
+      analysis
+    );
+
+    expect(result.ev).toBeCloseTo(0.2);
+    expect(result.kelly).toBe(0);
+    expect(result.isValue).toBe(false);
   });
 });

@@ -247,9 +247,9 @@ export default async function QuantPage() {
               ) : (
                 <>
                   <OptionsTable rows={rows.slice(0, MAX_ROWS_PER_MATCH)} balance={balance} />
-                  {analysis.modelScope === "club" && (
+                  {analysis.modelScope === "club" && !analysis.stakingAllowed && (
                     <p className="text-[11px] text-amber-400/70">
-                      英超模型回測未能跑贏收盤賠率，價值標記僅供參考。
+                      英超模型回測錄得負回報，已停用價值標記及建議注碼；目前資料只供比較模型與市場分歧。
                     </p>
                   )}
                 </>

@@ -329,10 +329,19 @@ async function trainInternational() {
 // ---------------------------------------------------------------------------
 
 const CLUB_DIVISIONS = ["E0", "E1"]; // Premier League + Championship (for promoted teams)
-const CLUB_SEASONS = [
-  "1011", "1112", "1213", "1314", "1415", "1516", "1617", "1718",
-  "1819", "1920", "2021", "2122", "2223", "2324", "2425", "2526",
-];
+function clubSeasonCodes(now = new Date()) {
+  const currentYear = now.getUTCFullYear();
+  const currentStartYear = now.getUTCMonth() >= 6 ? currentYear : currentYear - 1;
+  const codes: string[] = [];
+  for (let startYear = 2010; startYear <= currentStartYear; startYear++) {
+    codes.push(
+      `${String(startYear).slice(-2)}${String(startYear + 1).slice(-2)}`
+    );
+  }
+  return codes;
+}
+
+const CLUB_SEASONS = clubSeasonCodes();
 const CLUB_EVAL_START = "2024-07-01";
 const CLUB_ROI_EV_THRESHOLD = 0.05;
 

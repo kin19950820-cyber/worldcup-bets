@@ -42,6 +42,7 @@ export type MatchAnalysis = {
   eloExpectancy: number;
   modelAgreement: number; // 0..1: Elo win expectancy vs Dixon-Coles matrix
   confidence: "high" | "medium" | "low";
+  stakingAllowed: boolean;
   marginDist: Array<[number, number]>;
   totalDist: Array<[number, number]>;
   matrix: number[][]; // exact P(home = h, away = a) score matrix
@@ -139,6 +140,7 @@ function analyzeClubFixture(
     eloExpectancy,
     modelAgreement,
     confidence,
+    stakingAllowed: clubBacktestData.roi.roi > 0,
     marginDist: [...marginDistribution(matrix).entries()],
     totalDist: [...totalDistribution(matrix).entries()],
     matrix,
@@ -203,6 +205,7 @@ export function analyzeFixture(
     eloExpectancy,
     modelAgreement,
     confidence,
+    stakingAllowed: true,
     marginDist: [...marginDistribution(matrix).entries()],
     totalDist: [...totalDistribution(matrix).entries()],
     matrix,

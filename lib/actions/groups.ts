@@ -71,8 +71,21 @@ export async function createGroup(name: string) {
       .single();
 
     if (!error && group) {
-      await service.from("profiles").update({ group_id: group.id }).eq("id", user.id);
+      const { error: membershipError } = await service
+        .from("profiles")
+        .update({ group_id: group.id })
+        .eq("id", user.id);
+      if (membershipError) {
+        // Best-effort cleanup: do not report success with an orphaned group.
+        await service
+          .from("groups")
+          .delete()
+          .eq("id", group.id)
+          .eq("created_by", user.id);
+        return { error: membershipError.message };
+      }
       revalidatePath("/leaderboard");
+      revalidatePath("/dashboard");
       return { success: true };
     }
     // Retry on a code collision only; anything else is a real failure.
@@ -99,8 +112,13 @@ export async function joinGroup(code: string) {
     .maybeSingle();
   if (!group) return { error: "找不到此群組代碼" };
 
-  await service.from("profiles").update({ group_id: group.id }).eq("id", user.id);
+  const { error: membershipError } = await service
+    .from("profiles")
+    .update({ group_id: group.id })
+    .eq("id", user.id);
+  if (membershipError) return { error: membershipError.message };
   revalidatePath("/leaderboard");
+  revalidatePath("/dashboard");
   return { success: true };
 }
 
@@ -112,7 +130,12 @@ export async function leaveGroup() {
   } = await supabase.auth.getUser();
   if (!user) return { error: "未登入" };
 
-  await service.from("profiles").update({ group_id: null }).eq("id", user.id);
+  const { error } = await service
+    .from("profiles")
+    .update({ group_id: null })
+    .eq("id", user.id);
+  if (error) return { error: error.message };
   revalidatePath("/leaderboard");
+  revalidatePath("/dashboard");
   return { success: true };
 }

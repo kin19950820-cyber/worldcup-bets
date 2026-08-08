@@ -581,7 +581,7 @@ export default function BetForm({ matches, currentBalance }: BetFormProps) {
 
     startTransition(async () => {
       const result = await createBet(formData);
-      if ("error" in result && result.error) {
+      if (!("success" in result)) {
         toast.error(result.error);
         return;
       }
@@ -608,7 +608,7 @@ export default function BetForm({ matches, currentBalance }: BetFormProps) {
 
     startTransition(async () => {
       const result = await createParlay(input, stakeNum);
-      if ("error" in result && result.error) {
+      if (!("success" in result)) {
         toast.error(result.error);
         return;
       }

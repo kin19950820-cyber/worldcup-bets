@@ -4,28 +4,32 @@ import { createClient, createServiceClient } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
 import type { BetType } from "@/lib/types";
 import { isMatchBettable, BETTING_CLOSED_MESSAGE } from "@/lib/match-status";
-import { validateStake } from "@/lib/season2-loans";
-import { getActiveSeason } from "@/lib/seasons";
-
-// Outstanding Season 2 debt for a user (0 when no season_players row yet).
-async function getActiveSeasonDebt(
-  service: ReturnType<typeof createServiceClient>,
-  userId: string
-): Promise<number> {
-  const { data } = await service
-    .from("season_players")
-    .select("outstanding_debt")
-    .eq("user_id", userId)
-    .eq("season_id", getActiveSeason().id)
-    .maybeSingle();
-  return Number(data?.outstanding_debt ?? 0);
-}
 import {
   getParlayPossibleReturn,
-  PARLAY_BET_TYPE,
   serializeParlay,
   type ParlayLeg,
 } from "@/lib/parlay";
+
+const BET_RPC_ERRORS: Record<string, string> = {
+  SEASON_PLAYER_MISSING: "找不到本季玩家資料",
+  SEASON_CLOSED: "本季已結束",
+  MATCH_NOT_FOUND: "找不到賽事",
+  MATCH_WRONG_SEASON: "此賽事不屬於目前賽季",
+  BETTING_CLOSED: BETTING_CLOSED_MESSAGE,
+  BAD_ODDS: "賠率必須大於 1",
+  BAD_STAKE: "投注金額必須大於 0",
+  DEBT_STAKE_LIMIT: "欠款期間單注上限為 $100",
+  DEBT_NO_PARLAY: "欠款期間不可投注過關",
+  INSUFFICIENT_BALANCE: "餘額不足",
+};
+
+function mapBetRpcError(message: string | undefined) {
+  if (!message) return "投注失敗，請稍後再試";
+  const code = Object.keys(BET_RPC_ERRORS).find((key) => message.includes(key));
+  if (code) return BET_RPC_ERRORS[code];
+  if (message.includes("PGRST202")) return "投注功能尚未完成資料庫設定";
+  return message;
+}
 
 export type ParlayLegInput = {
   match_id: string;
@@ -64,64 +68,27 @@ export async function createBet(formData: FormData) {
     return { error: BETTING_CLOSED_MESSAGE };
   }
 
-  // Check balance + Season 2 debt restrictions.
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("current_balance")
-    .eq("id", user.id)
-    .single();
-
-  if (!profile) return { error: "找不到用戶資料" };
-
-  const outstandingDebt = await getActiveSeasonDebt(service, user.id);
-  const stakeError = validateStake({
-    stake,
-    currentBalance: profile.current_balance,
-    outstandingDebt,
-    isParlay: false,
-  });
-  if (stakeError) return { error: stakeError };
-
   const possible_return = parseFloat((odds * stake).toFixed(2));
-  const new_balance = parseFloat((profile.current_balance - stake).toFixed(2));
-
-  // Insert bet
-  const { data: bet, error: betErr } = await service
-    .from("bets")
-    .insert({
-      user_id: user.id,
-      match_id,
-      bet_type,
-      selection,
-      odds,
-      stake,
-      possible_return,
-      status: "pending",
-    })
-    .select()
-    .single();
-
-  if (betErr) return { error: betErr.message };
-
-  // Deduct balance
-  await service
-    .from("profiles")
-    .update({ current_balance: new_balance })
-    .eq("id", user.id);
-
-  // Record transaction
-  await service.from("transactions").insert({
-    user_id: user.id,
-    bet_id: bet.id,
-    type: "stake_deduct",
-    amount: -stake,
-    balance_after: new_balance,
+  const { data, error } = await service.rpc("place_single_bet", {
+    p_user_id: user.id,
+    p_match_id: match_id,
+    p_bet_type: bet_type,
+    p_selection: selection,
+    p_odds: odds,
+    p_stake: stake,
   });
+  if (error) return { error: mapBetRpcError(error.message) };
+
+  const result = data as {
+    bet_id: string;
+    new_balance: number;
+    season_id: number;
+  };
 
   revalidatePath("/dashboard");
   revalidatePath("/bets-board");
 
-  return { success: true, bet, new_balance, possible_return };
+  return { success: true, ...result, possible_return };
 }
 
 export async function createParlay(legsInput: ParlayLegInput[], stakeInput: number) {
@@ -156,33 +123,14 @@ export async function createParlay(legsInput: ParlayLegInput[], stakeInput: numb
     }
   }
 
-  const [{ data: matches, error: matchesError }, { data: profile }] =
-    await Promise.all([
-      service
-        .from("matches")
-        .select("id, home_team, away_team, kickoff_time, status")
-        .in("id", matchIds),
-      service
-        .from("profiles")
-        .select("current_balance")
-        .eq("id", user.id)
-        .single(),
-    ]);
+  const { data: matches, error: matchesError } = await service
+    .from("matches")
+    .select("id, home_team, away_team, kickoff_time, status")
+    .in("id", matchIds);
 
   if (matchesError || !matches || matches.length !== legsInput.length) {
     return { error: "部分賽事不存在" };
   }
-  if (!profile) return { error: "找不到玩家資料" };
-
-  const outstandingDebt = await getActiveSeasonDebt(service, user.id);
-  const parlayStakeError = validateStake({
-    stake,
-    currentBalance: profile.current_balance,
-    outstandingDebt,
-    isParlay: true,
-  });
-  if (parlayStakeError) return { error: parlayStakeError };
-
   const matchMap = new Map(matches.map((match) => [match.id, match]));
   const legs: ParlayLeg[] = legsInput.map((input, index) => {
     const match = matchMap.get(input.match_id)!;
@@ -213,56 +161,16 @@ export async function createParlay(legsInput: ParlayLegInput[], stakeInput: numb
     legs.reduce((product, leg) => product * leg.odds, 1) * 10000
   ) / 10000;
   const possibleReturn = getParlayPossibleReturn(stake, legs);
-  const newBalance =
-    Math.round((profile.current_balance - stake) * 100) / 100;
-
-  const { data: bet, error: betError } = await service
-    .from("bets")
-    .insert({
-      user_id: user.id,
-      match_id: legs[0].match_id,
-      bet_type: PARLAY_BET_TYPE,
-      selection: serializeParlay({ version: 1, legs }),
-      odds: totalOdds,
-      stake,
-      possible_return: possibleReturn,
-      status: "pending",
-    })
-    .select()
-    .single();
-
-  if (betError || !bet) return { error: betError?.message ?? "建立過關失敗" };
-
-  const { data: updatedProfile, error: balanceError } = await service
-    .from("profiles")
-    .update({ current_balance: newBalance })
-    .eq("id", user.id)
-    .eq("current_balance", profile.current_balance)
-    .select("current_balance")
-    .single();
-
-  if (balanceError || !updatedProfile) {
-    await service.from("bets").delete().eq("id", bet.id);
-    return { error: balanceError?.message ?? "餘額剛被更新，請重試" };
-  }
-
-  const { error: transactionError } = await service.from("transactions").insert({
-    user_id: user.id,
-    bet_id: bet.id,
-    type: "stake_deduct",
-    amount: -stake,
-    balance_after: newBalance,
+  const { data, error } = await service.rpc("place_parlay", {
+    p_user_id: user.id,
+    p_match_ids: matchIds,
+    p_selection: serializeParlay({ version: 1, legs }),
+    p_total_odds: totalOdds,
+    p_stake: stake,
   });
+  if (error) return { error: mapBetRpcError(error.message) };
 
-  if (transactionError) {
-    await service
-      .from("profiles")
-      .update({ current_balance: profile.current_balance })
-      .eq("id", user.id)
-      .eq("current_balance", newBalance);
-    await service.from("bets").delete().eq("id", bet.id);
-    return { error: transactionError.message };
-  }
+  const result = data as { bet_id: string; new_balance: number };
 
   revalidatePath("/dashboard");
   revalidatePath("/bets-board");
@@ -270,8 +178,7 @@ export async function createParlay(legsInput: ParlayLegInput[], stakeInput: numb
 
   return {
     success: true,
-    bet,
-    new_balance: newBalance,
+    ...result,
     possible_return: possibleReturn,
     total_odds: totalOdds,
   };
