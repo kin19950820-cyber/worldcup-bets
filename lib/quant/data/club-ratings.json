@@ -1,9 +1,17 @@
 {
-  "trainedAt": "2026-08-07T22:01:53.996Z",
+  "trainedAt": "2026-08-10T22:03:20.170Z",
   "source": "https://www.football-data.co.uk",
-  "totalMatches": 14912,
-  "lastMatchDate": "2026-05-24",
+  "totalMatches": 14924,
+  "lastMatchDate": "2026-08-08",
   "teams": {
+    "Aldershot": {
+      "rating": 1512,
+      "matches": 1
+    },
+    "Altrincham": {
+      "rating": 1482,
+      "matches": 1
+    },
     "Arsenal": {
       "rating": 1963.5,
       "matches": 608
@@ -15,6 +23,10 @@
     "Barnsley": {
       "rating": 1278.7,
       "matches": 414
+    },
+    "Barrow": {
+      "rating": 1488,
+      "matches": 1
     },
     "Birmingham": {
       "rating": 1414.7,
@@ -31,6 +43,14 @@
     "Bolton": {
       "rating": 1213.9,
       "matches": 352
+    },
+    "Boreham Wood": {
+      "rating": 1498,
+      "matches": 1
+    },
+    "Boston Utd": {
+      "rating": 1488,
+      "matches": 1
     },
     "Bournemouth": {
       "rating": 1787.5,
@@ -60,6 +80,10 @@
       "rating": 1328.4,
       "matches": 674
     },
+    "Carlisle": {
+      "rating": 1488,
+      "matches": 1
+    },
     "Charlton": {
       "rating": 1347.9,
       "matches": 276
@@ -84,13 +108,45 @@
       "rating": 1338.5,
       "matches": 138
     },
+    "Eastleigh": {
+      "rating": 1508,
+      "matches": 1
+    },
     "Everton": {
       "rating": 1700.1,
       "matches": 608
     },
+    "Forest Green": {
+      "rating": 1508,
+      "matches": 1
+    },
     "Fulham": {
       "rating": 1715.9,
       "matches": 656
+    },
+    "Fylde": {
+      "rating": 1498,
+      "matches": 1
+    },
+    "Gateshead": {
+      "rating": 1492,
+      "matches": 1
+    },
+    "Halifax": {
+      "rating": 1492,
+      "matches": 1
+    },
+    "Harrogate": {
+      "rating": 1514,
+      "matches": 1
+    },
+    "Hartlepool": {
+      "rating": 1512,
+      "matches": 1
+    },
+    "Hornchurch": {
+      "rating": 1514,
+      "matches": 1
     },
     "Huddersfield": {
       "rating": 1329.5,
@@ -103,6 +159,10 @@
     "Ipswich": {
       "rating": 1559,
       "matches": 544
+    },
+    "Kidderminster": {
+      "rating": 1486,
+      "matches": 1
     },
     "Leeds": {
       "rating": 1711.3,
@@ -185,8 +245,8 @@
       "matches": 322
     },
     "Scunthorpe": {
-      "rating": 1367.9,
-      "matches": 46
+      "rating": 1365.8,
+      "matches": 47
     },
     "Sheffield United": {
       "rating": 1448.8,
@@ -196,9 +256,17 @@
       "rating": 1209.7,
       "matches": 552
     },
+    "Solihull": {
+      "rating": 1486,
+      "matches": 1
+    },
     "Southampton": {
       "rating": 1552.7,
       "matches": 594
+    },
+    "Southend": {
+      "rating": 1518,
+      "matches": 1
     },
     "Stoke": {
       "rating": 1338.4,
@@ -208,9 +276,17 @@
       "rating": 1632.8,
       "matches": 488
     },
+    "Sutton": {
+      "rating": 1521,
+      "matches": 1
+    },
     "Swansea": {
       "rating": 1443.7,
       "matches": 680
+    },
+    "Tamworth": {
+      "rating": 1502,
+      "matches": 1
     },
     "Tottenham": {
       "rating": 1645.6,
@@ -219,6 +295,10 @@
     "Watford": {
       "rating": 1347.3,
       "matches": 688
+    },
+    "Wealdstone": {
+      "rating": 1502,
+      "matches": 1
     },
     "West Brom": {
       "rating": 1404.2,
@@ -232,9 +312,17 @@
       "rating": 1337.5,
       "matches": 390
     },
+    "Woking": {
+      "rating": 1479,
+      "matches": 1
+    },
     "Wolves": {
       "rating": 1555.1,
       "matches": 610
+    },
+    "Worthing": {
+      "rating": 1512,
+      "matches": 1
     },
     "Wrexham": {
       "rating": 1473.3,
@@ -245,8 +333,8 @@
       "matches": 46
     },
     "Yeovil": {
-      "rating": 1362.4,
-      "matches": 46
+      "rating": 1364.5,
+      "matches": 47
     }
   }
 }
