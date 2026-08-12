@@ -12,11 +12,14 @@ type Scope = "active" | "all";
 export default function LeaderboardView({
   entries,
   myGroup,
+  isActiveSeason = true,
 }: {
   entries: LeaderboardEntry[];
   myGroup: MyGroup | null;
+  isActiveSeason?: boolean;
 }) {
-  const [scope, setScope] = useState<Scope>("active");
+  // A completed season has no "recent activity", so show everyone by default.
+  const [scope, setScope] = useState<Scope>(isActiveSeason ? "active" : "all");
   const [groupId, setGroupId] = useState<string>(myGroup?.id ?? "all");
 
   const groupOptions = Array.from(
@@ -40,17 +43,19 @@ export default function LeaderboardView({
       <GroupPanel myGroup={myGroup} />
 
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-        <div>
-          <label className="form-label">顯示玩家</label>
-          <select
-            value={scope}
-            onChange={(event) => setScope(event.target.value as Scope)}
-            className="form-input appearance-none"
-          >
-            <option value="active">現役玩家（3 日內有投注）</option>
-            <option value="all">全部玩家</option>
-          </select>
-        </div>
+        {isActiveSeason && (
+          <div>
+            <label className="form-label">顯示玩家</label>
+            <select
+              value={scope}
+              onChange={(event) => setScope(event.target.value as Scope)}
+              className="form-input appearance-none"
+            >
+              <option value="active">現役玩家（3 日內有投注）</option>
+              <option value="all">全部玩家</option>
+            </select>
+          </div>
+        )}
 
         {groupOptions.length > 0 && (
           <div>
