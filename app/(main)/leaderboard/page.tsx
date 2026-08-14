@@ -1,13 +1,13 @@
 import { getLeaderboard } from "@/lib/actions/leaderboard";
-import { getMyGroup } from "@/lib/actions/groups";
+import { getMyGroups } from "@/lib/actions/groups";
 import LeaderboardView from "@/components/leaderboard/LeaderboardView";
 
 export const dynamic = "force-dynamic";
 
 export default async function LeaderboardPage() {
-  const [{ entries }, myGroup] = await Promise.all([
+  const [{ entries }, myGroups] = await Promise.all([
     getLeaderboard(),
-    getMyGroup(),
+    getMyGroups(),
   ]);
 
   return (
@@ -15,7 +15,7 @@ export default async function LeaderboardPage() {
       <h1 className="text-xl font-bold text-white mb-6 flex items-center gap-2">
         🏆 龍虎榜
       </h1>
-      <LeaderboardView entries={entries} myGroup={myGroup} />
+      <LeaderboardView entries={entries} myGroups={myGroups} />
     </div>
   );
 }

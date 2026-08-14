@@ -12,7 +12,7 @@ import Link from "next/link";
 import MatchCountdown from "@/components/matches/MatchCountdown";
 import Season2LoanCard from "@/components/loans/Season2LoanCard";
 import { getSeasonState } from "@/lib/actions/season";
-import { getMyGroup } from "@/lib/actions/groups";
+import { getMyGroups } from "@/lib/actions/groups";
 import FundTrendChart from "@/components/dashboard/FundTrendChart";
 import GroupCard from "@/components/dashboard/GroupCard";
 import { parseParlay } from "@/lib/parlay";
@@ -20,10 +20,10 @@ import { parseParlay } from "@/lib/parlay";
 export const dynamic = "force-dynamic";
 
 export default async function DashboardPage() {
-  const [data, season, myGroup] = await Promise.all([
+  const [data, season, myGroups] = await Promise.all([
     getDashboardData(),
     getSeasonState(),
-    getMyGroup(),
+    getMyGroups(),
   ]);
   if (!data || !data.profile) redirect("/login");
 
@@ -58,7 +58,7 @@ export default async function DashboardPage() {
 
       <FundTrendChart points={balance_history} />
 
-      {myGroup && <GroupCard myGroup={myGroup} />}
+      {myGroups.length > 0 && <GroupCard myGroups={myGroups} />}
 
       {season && (
         <Season2LoanCard

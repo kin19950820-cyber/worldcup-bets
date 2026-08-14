@@ -11,33 +11,27 @@ type Scope = "active" | "all";
 
 export default function LeaderboardView({
   entries,
-  myGroup,
+  myGroups,
 }: {
   entries: LeaderboardEntry[];
-  myGroup: MyGroup | null;
+  myGroups: MyGroup[];
 }) {
   const [scope, setScope] = useState<Scope>("active");
-  const [groupId, setGroupId] = useState<string>(myGroup?.id ?? "all");
+  // Default to the viewer's first group when they belong to any.
+  const [groupId, setGroupId] = useState<string>(myGroups[0]?.id ?? "all");
 
-  const groupOptions = Array.from(
-    new Map(
-      entries
-        .filter((entry): entry is LeaderboardEntry & { group_id: string; group_name: string } =>
-          entry.group_id !== null && entry.group_name !== null
-        )
-        .map((entry) => [entry.group_id, entry.group_name])
-    ).entries()
-  ).sort((a, b) => a[1].localeCompare(b[1]));
-
+  // Only the viewer's own groups are selectable filters.
   const scoped =
-    groupId === "all" ? entries : entries.filter((entry) => entry.group_id === groupId);
+    groupId === "all"
+      ? entries
+      : entries.filter((entry) => entry.group_ids.includes(groupId));
   const visible =
     scope === "active" ? scoped.filter((entry) => entry.is_active) : scoped;
   const hiddenCount = scoped.length - visible.length;
 
   return (
     <div className="space-y-4">
-      <GroupPanel myGroup={myGroup} />
+      <GroupPanel myGroups={myGroups} />
 
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
         <div>
@@ -52,7 +46,7 @@ export default function LeaderboardView({
           </select>
         </div>
 
-        {groupOptions.length > 0 && (
+        {myGroups.length > 0 && (
           <div>
             <label className="form-label">群組</label>
             <select
@@ -61,10 +55,9 @@ export default function LeaderboardView({
               className="form-input appearance-none"
             >
               <option value="all">全部玩家（不分組）</option>
-              {groupOptions.map(([id, groupName]) => (
-                <option key={id} value={id}>
-                  {groupName}
-                  {myGroup?.id === id ? "（我的群組）" : ""}
+              {myGroups.map((group) => (
+                <option key={group.id} value={group.id}>
+                  {group.name}（{group.members.length} 人）
                 </option>
               ))}
             </select>

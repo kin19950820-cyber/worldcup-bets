@@ -18,32 +18,42 @@ export async function getLeaderboard(): Promise<{ entries: LeaderboardEntry[] }>
   const supabase = await createClient();
   const service = createServiceClient();
 
-  const [profilesRes, betsRes, loansRes, historyRes] = await Promise.all([
-    supabase
-      .from("profiles")
-      .select(
-        "id, display_name, current_balance, starting_fund, created_at, group_id, groups(name)"
-      ),
-    supabase
-      .from("bets")
-      .select("id, user_id, bet_type, status, stake, payout, odds, created_at, settled_at"),
-    service
-      .from("transactions")
-      .select("user_id, amount, type, created_at")
-      .is("bet_id", null)
-      .in("type", ["loan", "adjustment", "loan_repayment"])
-      .order("created_at", { ascending: true }),
-    service
-      .from("transactions")
-      .select("user_id, amount, type, balance_after, created_at")
-      .in("type", FUND_TREND_TRANSACTION_TYPES)
-      .order("created_at", { ascending: true }),
-  ]);
+  const [profilesRes, betsRes, loansRes, historyRes, membersRes] =
+    await Promise.all([
+      supabase
+        .from("profiles")
+        .select(
+          "id, display_name, current_balance, starting_fund, created_at, group_id, groups(name)"
+        ),
+      supabase
+        .from("bets")
+        .select("id, user_id, bet_type, status, stake, payout, odds, created_at, settled_at"),
+      service
+        .from("transactions")
+        .select("user_id, amount, type, created_at")
+        .is("bet_id", null)
+        .in("type", ["loan", "adjustment", "loan_repayment"])
+        .order("created_at", { ascending: true }),
+      service
+        .from("transactions")
+        .select("user_id, amount, type, balance_after, created_at")
+        .in("type", FUND_TREND_TRANSACTION_TYPES)
+        .order("created_at", { ascending: true }),
+      service.from("group_members").select("group_id, user_id"),
+    ]);
 
   const profiles = profilesRes.data ?? [];
   const bets = betsRes.data ?? [];
   const loans = loansRes.data ?? [];
   const history = historyRes.data ?? [];
+
+  // Every group each player belongs to (multi-group membership).
+  const groupsByUser = new Map<string, string[]>();
+  for (const row of membersRes.data ?? []) {
+    const list = groupsByUser.get(row.user_id) ?? [];
+    list.push(row.group_id);
+    groupsByUser.set(row.user_id, list);
+  }
 
   // A player is "active" when they placed a bet within the last 3 days.
   // All players are computed; the client decides whether to show inactive
@@ -131,6 +141,7 @@ export async function getLeaderboard(): Promise<{ entries: LeaderboardEntry[] }>
       display_name: p.display_name,
       group_id: p.group_id,
       group_name: group?.name ?? null,
+      group_ids: groupsByUser.get(p.id) ?? [],
       current_balance: p.current_balance,
       net_balance: netBalance,
       total_borrowed: totalBorrowed,
