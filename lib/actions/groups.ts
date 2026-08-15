@@ -39,10 +39,27 @@ export async function getMyGroups(): Promise<MyGroup[]> {
   } = await supabase.auth.getUser();
   if (!user) return [];
 
-  const { data: memberships } = await service
+  const { data: memberships, error } = await service
     .from("group_members")
     .select("groups(id, name, code)")
     .eq("user_id", user.id);
+
+  // Fallback: if the group_members migration isn't applied yet, use the legacy
+  // single primary group so the UI keeps working.
+  if (error) {
+    const { data: profile } = await service
+      .from("profiles")
+      .select("groups(id, name, code)")
+      .eq("id", user.id)
+      .maybeSingle();
+    const g = profile?.groups as unknown as
+      | { id: string; name: string; code: string }
+      | { id: string; name: string; code: string }[]
+      | null;
+    const primary = Array.isArray(g) ? g[0] ?? null : g;
+    if (!primary) return [];
+    return [{ ...primary, members: await legacyMembersOf(service, primary.id) }];
+  }
 
   const groups = (memberships ?? [])
     .map((row) => row.groups as unknown as { id: string; name: string; code: string } | null)
@@ -57,6 +74,55 @@ export async function getMyGroups(): Promise<MyGroup[]> {
       members: await membersOf(service, g.id),
     }))
   );
+}
+
+// Members via the legacy profiles.group_id pointer (pre-migration fallback).
+async function legacyMembersOf(
+  service: ReturnType<typeof createServiceClient>,
+  groupId: string
+) {
+  const { data } = await service
+    .from("profiles")
+    .select("id, display_name")
+    .eq("group_id", groupId)
+    .order("display_name");
+  return data ?? [];
+}
+
+// Every group in the app (for the leaderboard filter and browsing).
+export type GroupSummary = { id: string; name: string; member_count: number };
+
+export async function getAllGroups(): Promise<GroupSummary[]> {
+  const supabase = await createClient();
+  const service = createServiceClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return [];
+
+  const { data: groups } = await service.from("groups").select("id, name");
+  if (!groups) return [];
+
+  const counts = new Map<string, number>();
+  const { data: members, error } = await service
+    .from("group_members")
+    .select("group_id");
+  if (error) {
+    // Fallback to legacy single membership counts.
+    const { data: profiles } = await service
+      .from("profiles")
+      .select("group_id")
+      .not("group_id", "is", null);
+    for (const p of profiles ?? [])
+      counts.set(p.group_id, (counts.get(p.group_id) ?? 0) + 1);
+  } else {
+    for (const m of members ?? [])
+      counts.set(m.group_id, (counts.get(m.group_id) ?? 0) + 1);
+  }
+
+  return groups
+    .map((g) => ({ id: g.id, name: g.name, member_count: counts.get(g.id) ?? 0 }))
+    .sort((a, b) => a.name.localeCompare(b.name));
 }
 
 // Create a group with a chosen name AND code, then join it.

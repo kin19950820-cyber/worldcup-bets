@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import type { LeaderboardEntry } from "@/lib/types";
-import type { MyGroup } from "@/lib/actions/groups";
+import type { MyGroup, GroupSummary } from "@/lib/actions/groups";
 import LeaderboardTable from "@/components/leaderboard/LeaderboardTable";
 import StreakHighlights from "@/components/leaderboard/StreakHighlights";
 import GroupPanel from "@/components/leaderboard/GroupPanel";
@@ -12,13 +12,16 @@ type Scope = "active" | "all";
 export default function LeaderboardView({
   entries,
   myGroups,
+  allGroups = [],
 }: {
   entries: LeaderboardEntry[];
   myGroups: MyGroup[];
+  allGroups?: GroupSummary[];
 }) {
   const [scope, setScope] = useState<Scope>("active");
   // Default to the viewer's first group when they belong to any.
   const [groupId, setGroupId] = useState<string>(myGroups[0]?.id ?? "all");
+  const myGroupIds = new Set(myGroups.map((g) => g.id));
 
   // Only the viewer's own groups are selectable filters.
   const scoped =
@@ -46,7 +49,7 @@ export default function LeaderboardView({
           </select>
         </div>
 
-        {myGroups.length > 0 && (
+        {allGroups.length > 0 && (
           <div>
             <label className="form-label">群組</label>
             <select
@@ -55,9 +58,10 @@ export default function LeaderboardView({
               className="form-input appearance-none"
             >
               <option value="all">全部玩家（不分組）</option>
-              {myGroups.map((group) => (
+              {allGroups.map((group) => (
                 <option key={group.id} value={group.id}>
-                  {group.name}（{group.members.length} 人）
+                  {group.name}（{group.member_count} 人）
+                  {myGroupIds.has(group.id) ? " ★" : ""}
                 </option>
               ))}
             </select>

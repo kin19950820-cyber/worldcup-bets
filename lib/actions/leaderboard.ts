@@ -47,12 +47,19 @@ export async function getLeaderboard(): Promise<{ entries: LeaderboardEntry[] }>
   const loans = loansRes.data ?? [];
   const history = historyRes.data ?? [];
 
-  // Every group each player belongs to (multi-group membership).
+  // Every group each player belongs to (multi-group membership). Falls back to
+  // the legacy single primary group when the group_members table isn't there.
   const groupsByUser = new Map<string, string[]>();
-  for (const row of membersRes.data ?? []) {
-    const list = groupsByUser.get(row.user_id) ?? [];
-    list.push(row.group_id);
-    groupsByUser.set(row.user_id, list);
+  if (membersRes.error) {
+    for (const p of profiles) {
+      if (p.group_id) groupsByUser.set(p.id, [p.group_id]);
+    }
+  } else {
+    for (const row of membersRes.data ?? []) {
+      const list = groupsByUser.get(row.user_id) ?? [];
+      list.push(row.group_id);
+      groupsByUser.set(row.user_id, list);
+    }
   }
 
   // A player is "active" when they placed a bet within the last 3 days.
