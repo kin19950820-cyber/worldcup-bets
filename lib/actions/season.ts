@@ -2,7 +2,11 @@
 
 import { createClient, createServiceClient } from "@/lib/supabase/server";
 import { getActiveSeason, getSeason, SEASONS } from "@/lib/seasons";
-import { loanEligibility, roundMoney } from "@/lib/season2-loans";
+import {
+  loanEligibility,
+  roundMoney,
+  SEASON2_STARTING_BALANCE,
+} from "@/lib/season2-loans";
 
 export type SeasonPlayerRow = {
   season_id: number;
@@ -44,7 +48,7 @@ export async function getSeasonState(seasonId = getActiveSeason().id) {
     (pending ?? []).reduce((sum, bet) => sum + Number(bet.stake), 0)
   );
 
-  const startingBalance = row?.starting_balance ?? 500;
+  const startingBalance = row?.starting_balance ?? SEASON2_STARTING_BALANCE;
   const currentBalance = row?.current_balance ?? startingBalance;
   const outstandingDebt = row?.outstanding_debt ?? 0;
   const loanCount = row?.loan_count ?? 0;

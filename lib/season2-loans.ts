@@ -9,6 +9,10 @@
 //   * While in debt: max single stake $100, no parlays, no new loans.
 //   * Winning payouts repay outstanding debt first, remainder becomes cash.
 
+// Season 2 base (starting) balance. Each player begins with this; a rebuy
+// (loan) is a fixed $500 regardless of the base.
+export const SEASON2_STARTING_BALANCE = 1000;
+
 export const SEASON2_LOAN = {
   amount: 500,
   fee: 50,

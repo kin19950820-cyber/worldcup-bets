@@ -12,6 +12,7 @@ import Link from "next/link";
 import MatchCountdown from "@/components/matches/MatchCountdown";
 import Season2LoanCard from "@/components/loans/Season2LoanCard";
 import { getSeasonState } from "@/lib/actions/season";
+import { SEASON2_STARTING_BALANCE } from "@/lib/season2-loans";
 import { getMyGroups } from "@/lib/actions/groups";
 import FundTrendChart from "@/components/dashboard/FundTrendChart";
 import GroupCard from "@/components/dashboard/GroupCard";
@@ -46,7 +47,9 @@ export default async function DashboardPage() {
       <div className="card p-5">
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-slate-400 text-sm font-medium">現時結餘</h2>
-          <span className="text-xs text-slate-500">初始 HK$500</span>
+          <span className="text-xs text-slate-500">
+            初始 HK${SEASON2_STARTING_BALANCE}
+          </span>
         </div>
         <div className="text-4xl font-bold text-white mb-1">
           {formatCurrency(profile.current_balance)}

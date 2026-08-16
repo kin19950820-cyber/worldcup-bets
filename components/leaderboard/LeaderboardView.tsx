@@ -6,6 +6,7 @@ import type { MyGroup, GroupSummary } from "@/lib/actions/groups";
 import LeaderboardTable from "@/components/leaderboard/LeaderboardTable";
 import StreakHighlights from "@/components/leaderboard/StreakHighlights";
 import GroupPanel from "@/components/leaderboard/GroupPanel";
+import GroupOverview from "@/components/leaderboard/GroupOverview";
 
 type Scope = "active" | "all";
 
@@ -31,6 +32,9 @@ export default function LeaderboardView({
   const visible =
     scope === "active" ? scoped.filter((entry) => entry.is_active) : scoped;
   const hiddenCount = scoped.length - visible.length;
+
+  const selectedGroup =
+    groupId === "all" ? null : allGroups.find((g) => g.id === groupId) ?? null;
 
   return (
     <div className="space-y-4">
@@ -72,6 +76,10 @@ export default function LeaderboardView({
         <p className="text-xs text-slate-600">
           已隱藏 {hiddenCount} 位非現役玩家
         </p>
+      )}
+
+      {selectedGroup && (
+        <GroupOverview groupName={selectedGroup.name} members={scoped} />
       )}
 
       <StreakHighlights entries={visible} />

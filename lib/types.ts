@@ -141,6 +141,7 @@ export type LeaderboardEntry = {
   total_pending: number;
   win_rate: number;
   total_stake: number;
+  loan_count: number;
   longest_win_streak: number;
   longest_loss_streak: number;
   historical_high: number;

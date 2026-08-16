@@ -3,6 +3,7 @@
 import { createClient, createServiceClient } from "@/lib/supabase/server";
 import { calculateLoanBalance } from "@/lib/loans";
 import { classifyBetOutcome, computeStreaks } from "@/lib/bet-stats";
+import { getActiveSeason } from "@/lib/seasons";
 import type { LeaderboardEntry } from "@/lib/types";
 
 const FUND_TREND_TRANSACTION_TYPES = [
@@ -18,8 +19,14 @@ export async function getLeaderboard(): Promise<{ entries: LeaderboardEntry[] }>
   const supabase = await createClient();
   const service = createServiceClient();
 
-  const [profilesRes, betsRes, loansRes, historyRes, membersRes] =
-    await Promise.all([
+  const [
+    profilesRes,
+    betsRes,
+    loansRes,
+    historyRes,
+    membersRes,
+    seasonPlayersRes,
+  ] = await Promise.all([
       supabase
         .from("profiles")
         .select(
@@ -40,12 +47,25 @@ export async function getLeaderboard(): Promise<{ entries: LeaderboardEntry[] }>
         .in("type", FUND_TREND_TRANSACTION_TYPES)
         .order("created_at", { ascending: true }),
       service.from("group_members").select("group_id, user_id"),
+      service
+        .from("season_players")
+        .select("user_id, outstanding_debt, loan_count")
+        .eq("season_id", getActiveSeason().id),
     ]);
 
   const profiles = profilesRes.data ?? [];
   const bets = betsRes.data ?? [];
   const loans = loansRes.data ?? [];
   const history = historyRes.data ?? [];
+
+  // Active-season debt + rebuy (loan) count from season_players.
+  const seasonByUser = new Map(
+    (
+      (seasonPlayersRes.data as
+        | { user_id: string; outstanding_debt: number; loan_count: number }[]
+        | null) ?? []
+    ).map((row) => [row.user_id, row])
+  );
 
   // Every group each player belongs to (multi-group membership). Falls back to
   // the legacy single primary group when the group_members table isn't there.
@@ -74,9 +94,16 @@ export async function getLeaderboard(): Promise<{ entries: LeaderboardEntry[] }>
 
   const entries: LeaderboardEntry[] = profiles.map((p) => {
     const userBets = bets.filter((b) => b.user_id === p.id);
-    const totalBorrowed = calculateLoanBalance(
-      loans.filter((transaction) => transaction.user_id === p.id)
-    ).totalOwed;
+    const seasonRow = seasonByUser.get(p.id);
+    const loanCount = seasonRow?.loan_count ?? 0;
+    // Season 2 debt (flat model) comes from season_players; fall back to the
+    // legacy tiered ledger when there is no season row.
+    const totalBorrowed =
+      seasonRow != null
+        ? Number(seasonRow.outstanding_debt)
+        : calculateLoanBalance(
+            loans.filter((transaction) => transaction.user_id === p.id)
+          ).totalOwed;
     const balanceHistory = [
       {
         balance: p.starting_fund,
@@ -163,6 +190,7 @@ export async function getLeaderboard(): Promise<{ entries: LeaderboardEntry[] }>
       total_stake: parseFloat(
         userBets.reduce((s, b) => s + b.stake, 0).toFixed(2)
       ),
+      loan_count: loanCount,
       longest_win_streak: longestWin,
       longest_loss_streak: longestLoss,
       historical_high: historicalHigh,
