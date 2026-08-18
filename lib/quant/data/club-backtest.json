@@ -1,15 +1,15 @@
 {
-  "evaluatedAt": "2026-08-10T22:03:20.169Z",
+  "evaluatedAt": "2026-08-18T21:43:13.320Z",
   "evalStart": "2024-07-01",
-  "matches": 772,
-  "brier": 0.6077461900864789,
-  "logLoss": 1.0129519944812093,
-  "accuracy": 0.49740932642487046,
+  "matches": 760,
+  "brier": 0.6070036426032167,
+  "logLoss": 1.011885478832369,
+  "accuracy": 0.4986842105263158,
   "roi": {
     "evThreshold": 0.05,
-    "bets": 434,
-    "hits": 114,
-    "profitUnits": -61.34,
-    "roi": -0.1413
+    "bets": 426,
+    "hits": 111,
+    "profitUnits": -64.12,
+    "roi": -0.1505
   }
 }
