@@ -18,13 +18,18 @@ export default function LeaderboardView({
   // Groups are private: you can only view/filter groups you've joined.
   const [groupId, setGroupId] = useState<string>(myGroups[0]?.id ?? "all");
 
-  const visible =
-    groupId === "all"
-      ? entries
-      : entries.filter((entry) => entry.group_ids.includes(groupId));
-
   const selectedGroup =
     groupId === "all" ? null : myGroups.find((g) => g.id === groupId) ?? null;
+
+  // Filter by the group's authoritative member list (same source as the
+  // dropdown count) rather than each entry's group_ids, which can diverge from
+  // group_members when a player's legacy profiles.group_id points elsewhere.
+  const memberIds = selectedGroup
+    ? new Set(selectedGroup.members.map((m) => m.id))
+    : null;
+  const visible = memberIds
+    ? entries.filter((entry) => memberIds.has(entry.id))
+    : entries;
 
   return (
     <div className="space-y-4">
