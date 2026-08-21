@@ -89,42 +89,6 @@ async function legacyMembersOf(
   return data ?? [];
 }
 
-// Every group in the app (for the leaderboard filter and browsing).
-export type GroupSummary = { id: string; name: string; member_count: number };
-
-export async function getAllGroups(): Promise<GroupSummary[]> {
-  const supabase = await createClient();
-  const service = createServiceClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) return [];
-
-  const { data: groups } = await service.from("groups").select("id, name");
-  if (!groups) return [];
-
-  const counts = new Map<string, number>();
-  const { data: members, error } = await service
-    .from("group_members")
-    .select("group_id");
-  if (error) {
-    // Fallback to legacy single membership counts.
-    const { data: profiles } = await service
-      .from("profiles")
-      .select("group_id")
-      .not("group_id", "is", null);
-    for (const p of profiles ?? [])
-      counts.set(p.group_id, (counts.get(p.group_id) ?? 0) + 1);
-  } else {
-    for (const m of members ?? [])
-      counts.set(m.group_id, (counts.get(m.group_id) ?? 0) + 1);
-  }
-
-  return groups
-    .map((g) => ({ id: g.id, name: g.name, member_count: counts.get(g.id) ?? 0 }))
-    .sort((a, b) => a.name.localeCompare(b.name));
-}
-
 // Create a group with a chosen name AND code, then join it.
 export async function createGroup(name: string, code: string) {
   const supabase = await createClient();
