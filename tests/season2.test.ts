@@ -27,14 +27,23 @@ describe("loan eligibility", () => {
     ).toBe(true);
   });
 
-  it("balance $100 => rejected (must be strictly below 100)", () => {
+  it("balance $100 => allowed (threshold is inclusive)", () => {
     const r = loanEligibility({
       currentBalance: 100,
       outstandingDebt: 0,
       loanCount: 0,
     });
+    expect(r.allowed).toBe(true);
+  });
+
+  it("balance $101 => rejected (above the $100 threshold)", () => {
+    const r = loanEligibility({
+      currentBalance: 101,
+      outstandingDebt: 0,
+      loanCount: 0,
+    });
     expect(r.allowed).toBe(false);
-    expect(r.reason).toBe("現時餘額必須低於 $100 才可借款");
+    expect(r.reason).toBe("現時餘額須為 $100 或以下才可借款");
   });
 
   it("balance $0, debt $550 => rejected for debt", () => {
@@ -228,7 +237,7 @@ describe("season configuration", () => {
 
   it("Season 2 players start at $500 (starting balance constant)", () => {
     // The starting balance the migration seeds; mirrored by the loan engine.
-    expect(SEASON2_LOAN.eligibleBalanceBelow).toBeLessThan(500);
+    expect(SEASON2_LOAN.eligibleBalanceAtMost).toBeLessThan(500);
   });
 });
 

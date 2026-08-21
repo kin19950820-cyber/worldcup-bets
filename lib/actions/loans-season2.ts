@@ -10,7 +10,7 @@ const RPC_ERRORS: Record<string, string> = {
   SEASON_PLAYER_MISSING: "找不到本季玩家資料",
   LOAN_LIMIT_REACHED: "本季借款次數已用完",
   DEBT_OUTSTANDING: "請先清還現有欠款",
-  BALANCE_TOO_HIGH: "現時餘額必須低於 $100 才可借款",
+  BALANCE_TOO_HIGH: "現時餘額須為 $100 或以下才可借款",
   NOT_ADMIN: "權限不足",
   REQUEST_NOT_FOUND: "找不到借款申請",
   REQUEST_NOT_PENDING: "此申請已處理",
