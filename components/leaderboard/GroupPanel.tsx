@@ -4,6 +4,7 @@ import { useState, useTransition } from "react";
 import toast from "react-hot-toast";
 import { createGroup, joinGroup, leaveGroup } from "@/lib/actions/groups";
 import type { MyGroup } from "@/lib/actions/groups";
+import GroupPoolSettings from "@/components/leaderboard/GroupPoolSettings";
 
 export default function GroupPanel({ myGroups }: { myGroups: MyGroup[] }) {
   const [pending, startTransition] = useTransition();
@@ -78,6 +79,7 @@ export default function GroupPanel({ myGroups }: { myGroups: MyGroup[] }) {
                 {group.members.length} 位成員：
                 {group.members.map((m) => m.display_name).join("、")}
               </p>
+              {group.is_owner && <GroupPoolSettings group={group} />}
             </div>
           ))}
         </div>

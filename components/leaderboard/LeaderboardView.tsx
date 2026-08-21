@@ -49,7 +49,7 @@ export default function LeaderboardView({
       )}
 
       {selectedGroup && (
-        <GroupOverview groupName={selectedGroup.name} members={visible} />
+        <GroupOverview group={selectedGroup} members={visible} />
       )}
 
       <StreakHighlights entries={visible} />
