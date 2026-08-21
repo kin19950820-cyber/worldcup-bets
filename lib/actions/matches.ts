@@ -2,6 +2,7 @@
 
 import { createClient, createServiceClient } from "@/lib/supabase/server";
 import { isMatchBettable } from "@/lib/match-status";
+import { getActiveSeason } from "@/lib/seasons";
 
 export async function getUpcomingMatches() {
   const supabase = await createClient();
@@ -142,6 +143,8 @@ export async function syncSpecialMarkets() {
     Date.now() + 60 * 24 * 60 * 60 * 1000
   ).toISOString();
 
+  const activeSeasonId = getActiveSeason().id;
+
   let synced = 0;
   let failed = 0;
   for (const market of markets) {
@@ -152,6 +155,10 @@ export async function syncSpecialMarkets() {
         away_team: market.tournamentName,
         kickoff_time: market.suspendAt ?? fallbackKickoff,
         stage: "特別項目",
+        // Special markets belong to the active season so they are bettable
+        // (re-syncing also corrects any older rows tagged to a past season).
+        season_id: activeSeasonId,
+        competition_code: "SPECIAL",
         status: "SCHEDULED",
         updated_at: new Date().toISOString(),
       },
