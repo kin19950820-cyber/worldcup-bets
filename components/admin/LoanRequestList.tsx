@@ -70,7 +70,7 @@ export default function LoanRequestList({ requests }: { requests: Request[] }) {
                   借 {formatCurrency(request.amount)} · 欠{" "}
                   {formatCurrency(request.amount + request.fee)}
                   {sp &&
-                    ` · 餘額 ${formatCurrency(sp.current_balance)} · 已借 ${sp.loan_count}/2`}
+                    ` · 餘額 ${formatCurrency(sp.current_balance)} · 已借 ${sp.loan_count} 次`}
                 </p>
                 {!eligibility.allowed && (
                   <p className="mt-0.5 text-[11px] text-red-400">

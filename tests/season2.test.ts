@@ -56,14 +56,13 @@ describe("loan eligibility", () => {
     expect(r.reason).toBe("請先清還現有欠款");
   });
 
-  it("balance $50, loan_count 2 => rejected for loan limit", () => {
+  it("rebuy count is unlimited: balance $50, loan_count 5 => allowed", () => {
     const r = loanEligibility({
       currentBalance: 50,
       outstandingDebt: 0,
-      loanCount: 2,
+      loanCount: 5,
     });
-    expect(r.allowed).toBe(false);
-    expect(r.reason).toBe("本季借款次數已用完");
+    expect(r.allowed).toBe(true);
   });
 });
 
@@ -93,7 +92,6 @@ describe("loan creation", () => {
     expect(SEASON2_LOAN.amount).toBe(500);
     expect(SEASON2_LOAN.fee).toBe(50);
     expect(SEASON2_LOAN.debt).toBe(550);
-    expect(SEASON2_LOAN.maxLoans).toBe(2);
   });
 });
 

@@ -1,11 +1,13 @@
 "use server";
 
 import { createClient, createServiceClient } from "@/lib/supabase/server";
-import { calculateLoanBalance } from "@/lib/loans";
 import { classifyBetOutcome, computeStreaks } from "@/lib/bet-stats";
-import { getActiveSeason } from "@/lib/seasons";
+import { getActiveSeason, getSeason } from "@/lib/seasons";
+import { SEASON2_STARTING_BALANCE, SEASON2_LOAN } from "@/lib/season2-loans";
 import type { LeaderboardEntry } from "@/lib/types";
 
+// Cash-affecting transaction types for the net-worth trend (both legacy and
+// Season 2 flat-loan types; rows are season-filtered).
 const FUND_TREND_TRANSACTION_TYPES = [
   "initial_fund",
   "payout",
@@ -13,6 +15,9 @@ const FUND_TREND_TRANSACTION_TYPES = [
   "loan",
   "adjustment",
   "loan_repayment",
+  "loan_principal",
+  "debt_repayment",
+  "admin_adjustment",
 ];
 
 export async function getLeaderboard(): Promise<{ entries: LeaderboardEntry[] }> {
@@ -28,10 +33,15 @@ export async function getLeaderboard(): Promise<{ entries: LeaderboardEntry[] }>
   } = await supabase.auth.getUser();
   if (!user) return { entries: [] };
 
+  // The 龍虎榜 reflects the ACTIVE season only — bets, transactions, starting
+  // balance and debt are all scoped to it, so Season 1 (World Cup) results are
+  // reset out of the ranking.
+  const seasonId = getActiveSeason().id;
+
   const [
     profilesRes,
     betsRes,
-    loansRes,
+    loanEventsRes,
     historyRes,
     membersRes,
     seasonPlayersRes,
@@ -44,23 +54,26 @@ export async function getLeaderboard(): Promise<{ entries: LeaderboardEntry[] }>
         ),
       service
         .from("bets")
-        .select("id, user_id, bet_type, status, stake, payout, odds, created_at, settled_at"),
+        .select("id, user_id, bet_type, status, stake, payout, odds, created_at, settled_at")
+        .eq("season_id", seasonId),
+      // Season 2 loan events, to reconstruct outstanding debt over time.
       service
         .from("transactions")
         .select("user_id, amount, type, created_at")
-        .is("bet_id", null)
-        .in("type", ["loan", "adjustment", "loan_repayment"])
+        .eq("season_id", seasonId)
+        .in("type", ["loan_principal", "debt_repayment"])
         .order("created_at", { ascending: true }),
       service
         .from("transactions")
         .select("user_id, amount, type, balance_after, created_at")
+        .eq("season_id", seasonId)
         .in("type", FUND_TREND_TRANSACTION_TYPES)
         .order("created_at", { ascending: true }),
       service.from("group_members").select("group_id, user_id"),
       service
         .from("season_players")
-        .select("user_id, outstanding_debt, loan_count")
-        .eq("season_id", getActiveSeason().id),
+        .select("user_id, starting_balance, current_balance, outstanding_debt, loan_count")
+        .eq("season_id", seasonId),
       service.from("groups").select("id, name"),
     ]);
 
@@ -74,14 +87,43 @@ export async function getLeaderboard(): Promise<{ entries: LeaderboardEntry[] }>
 
   const profiles = profilesRes.data ?? [];
   const bets = betsRes.data ?? [];
-  const loans = loansRes.data ?? [];
   const history = historyRes.data ?? [];
+  const seasonStart = getSeason(seasonId)?.start ?? null;
 
-  // Active-season debt + rebuy (loan) count from season_players.
+  // Per-user Season 2 loan events (sorted asc) → outstanding debt at any time.
+  const loanEventsByUser = new Map<
+    string,
+    { type: string; amount: number; created_at: string }[]
+  >();
+  for (const ev of (loanEventsRes.data as
+    | { user_id: string; type: string; amount: number; created_at: string }[]
+    | null) ?? []) {
+    const list = loanEventsByUser.get(ev.user_id) ?? [];
+    list.push(ev);
+    loanEventsByUser.set(ev.user_id, list);
+  }
+  const debtAtFor = (userId: string, iso: string) => {
+    const t = new Date(iso).getTime();
+    let debt = 0;
+    for (const ev of loanEventsByUser.get(userId) ?? []) {
+      if (new Date(ev.created_at).getTime() > t) break;
+      if (ev.type === "loan_principal") debt += SEASON2_LOAN.debt;
+      else if (ev.type === "debt_repayment") debt -= Math.abs(ev.amount);
+    }
+    return Math.max(0, Math.round(debt * 100) / 100);
+  };
+
+  // Active-season starting/current balance, debt + rebuy count.
   const seasonByUser = new Map(
     (
       (seasonPlayersRes.data as
-        | { user_id: string; outstanding_debt: number; loan_count: number }[]
+        | {
+            user_id: string;
+            starting_balance: number;
+            current_balance: number;
+            outstanding_debt: number;
+            loan_count: number;
+          }[]
         | null) ?? []
     ).map((row) => [row.user_id, row])
   );
@@ -115,34 +157,27 @@ export async function getLeaderboard(): Promise<{ entries: LeaderboardEntry[] }>
     const userBets = bets.filter((b) => b.user_id === p.id);
     const seasonRow = seasonByUser.get(p.id);
     const loanCount = seasonRow?.loan_count ?? 0;
-    // Season 2 debt (flat model) comes from season_players; fall back to the
-    // legacy tiered ledger when there is no season row.
-    const totalBorrowed =
-      seasonRow != null
-        ? Number(seasonRow.outstanding_debt)
-        : calculateLoanBalance(
-            loans.filter((transaction) => transaction.user_id === p.id)
-          ).totalOwed;
+    // All money figures are Season 2 only: starting/current balance and debt
+    // come from season_players (fall back to the season base when the player
+    // has no season row yet).
+    const startingFund = Number(
+      seasonRow?.starting_balance ?? SEASON2_STARTING_BALANCE
+    );
+    const currentBalance = Number(
+      seasonRow?.current_balance ?? p.current_balance ?? startingFund
+    );
+    const totalBorrowed = seasonRow != null ? Number(seasonRow.outstanding_debt) : 0;
     const balanceHistory = [
       {
-        balance: p.starting_fund,
-        net_balance: p.starting_fund,
+        balance: startingFund,
+        net_balance: startingFund,
         outstanding_loan: 0,
-        created_at: p.created_at,
+        created_at: seasonStart ?? p.created_at,
       },
       ...history
         .filter((transaction) => transaction.user_id === p.id)
         .map((transaction) => {
-          const outstandingLoan = calculateLoanBalance(
-            loans.filter(
-              (loanTransaction) =>
-                loanTransaction.user_id === p.id &&
-                new Date(loanTransaction.created_at).getTime() <=
-                  new Date(transaction.created_at).getTime()
-            ),
-            new Date(transaction.created_at)
-          ).totalOwed;
-
+          const outstandingLoan = debtAtFor(p.id, transaction.created_at);
           return {
             balance: transaction.balance_after,
             net_balance: transaction.balance_after - outstandingLoan,
@@ -154,7 +189,7 @@ export async function getLeaderboard(): Promise<{ entries: LeaderboardEntry[] }>
     const pendingStake = userBets
       .filter((bet) => bet.status === "pending")
       .reduce((sum, bet) => sum + bet.stake, 0);
-    const netBalance = p.current_balance + pendingStake - totalBorrowed;
+    const netBalance = currentBalance + pendingStake - totalBorrowed;
     const won = userBets.filter((b) => classifyBetOutcome(b) === "won");
     const halfWon = userBets.filter((b) => classifyBetOutcome(b) === "half_won");
     const lost = userBets.filter((b) => classifyBetOutcome(b) === "lost");
@@ -192,12 +227,12 @@ export async function getLeaderboard(): Promise<{ entries: LeaderboardEntry[] }>
       group_id: p.group_id,
       group_name: p.group_id ? groupNameById.get(p.group_id) ?? null : null,
       group_ids: groupsByUser.get(p.id) ?? [],
-      current_balance: p.current_balance,
+      current_balance: currentBalance,
       net_balance: netBalance,
       total_borrowed: totalBorrowed,
       pending_stake: pendingStake,
-      starting_fund: p.starting_fund,
-      profit_loss: parseFloat((netBalance - p.starting_fund).toFixed(2)),
+      starting_fund: startingFund,
+      profit_loss: parseFloat((netBalance - startingFund).toFixed(2)),
       total_won: won.length + halfWon.length,
       total_lost: lost.length + halfLost.length,
       total_void: voidBets.length,

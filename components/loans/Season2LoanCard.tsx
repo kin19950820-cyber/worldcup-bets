@@ -27,7 +27,6 @@ export default function Season2LoanCard({
   reason,
 }: Props) {
   const [pending, startTransition] = useTransition();
-  const loansLeft = SEASON2_LOAN.maxLoans - loanCount;
 
   const handleBorrow = () => {
     if (!eligible) return;
@@ -59,7 +58,7 @@ export default function Season2LoanCard({
           value={formatCurrency(outstandingDebt)}
           highlight={outstandingDebt > 0}
         />
-        <Tile label="借款次數" value={`${loanCount} / ${SEASON2_LOAN.maxLoans}`} />
+        <Tile label="重買次數" value={`${loanCount}（無限）`} />
         <Tile label="淨資產" value={formatCurrency(netWorth)} />
       </div>
 
@@ -78,7 +77,7 @@ export default function Season2LoanCard({
         {pending
           ? "申請中…"
           : eligible
-          ? `借入 $${SEASON2_LOAN.amount}（欠 $${SEASON2_LOAN.debt}，尚餘 ${loansLeft} 次）`
+          ? `借入 $${SEASON2_LOAN.amount}（欠 $${SEASON2_LOAN.debt}）`
           : reason ?? "暫不符合借款資格"}
       </button>
     </div>
