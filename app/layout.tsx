@@ -6,7 +6,7 @@ import "./globals.css";
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "世界盃燈神爭霸戰",
+  title: "英超大亂鬥",
   description: "少賭宜情 大賭變李嘉誠",
   manifest: "/manifest.json",
 };
