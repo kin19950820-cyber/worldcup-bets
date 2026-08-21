@@ -4,7 +4,7 @@
 // Rules (Season 2 only):
 //   * Each loan is exactly $500, with a fixed $50 fee → $550 debt created.
 //   * Only $500 is credited to usable cash; the $50 fee is debt-only.
-//   * Eligible only when: cash < $100 AND debt == 0 AND loans used < 2.
+//   * Eligible only when: cash <= $100 AND debt == 0 AND loans used < 2.
 //   * Max 2 loans/season; cannot re-borrow until previous loan fully repaid.
 //   * While in debt: max single stake $100, no parlays, no new loans.
 //   * Winning payouts repay outstanding debt first, remainder becomes cash.
@@ -18,7 +18,7 @@ export const SEASON2_LOAN = {
   fee: 50,
   debt: 550, // amount + fee
   maxLoans: 2,
-  eligibleBalanceBelow: 100,
+  eligibleBalanceAtMost: 100,
   indebtedMaxStake: 100,
 } as const;
 
@@ -43,8 +43,8 @@ export function loanEligibility(state: SeasonPlayerState): LoanEligibility {
   if (state.outstandingDebt > 0) {
     return { allowed: false, reason: "請先清還現有欠款" };
   }
-  if (state.currentBalance >= SEASON2_LOAN.eligibleBalanceBelow) {
-    return { allowed: false, reason: "現時餘額必須低於 $100 才可借款" };
+  if (state.currentBalance > SEASON2_LOAN.eligibleBalanceAtMost) {
+    return { allowed: false, reason: "現時餘額須為 $100 或以下才可借款" };
   }
   return { allowed: true, reason: null };
 }
