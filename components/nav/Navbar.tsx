@@ -51,7 +51,7 @@ export default function Navbar({ displayName, role, balance }: NavbarProps) {
       <header className="hidden md:flex fixed top-0 inset-x-0 z-50 h-16 bg-slate-900 border-b border-slate-800 items-center px-6 gap-6">
         <Link href="/dashboard" className="flex items-center gap-2 font-bold text-white shrink-0">
           <span className="text-xl">⚽</span>
-          <span className="text-sm">世界盃投注</span>
+          <span className="text-sm">英超大亂鬥</span>
         </Link>
 
         <nav className="flex items-center gap-1 flex-1">
@@ -119,7 +119,7 @@ export default function Navbar({ displayName, role, balance }: NavbarProps) {
       <header className="md:hidden fixed top-0 inset-x-0 z-50 h-14 bg-slate-900/95 border-b border-slate-800 backdrop-blur flex items-center justify-between px-4">
         <Link href="/dashboard" className="flex items-center gap-2 font-bold text-white">
           <span className="text-lg">⚽</span>
-          <span className="text-sm">世盃賭局</span>
+          <span className="text-sm">英超大亂鬥</span>
         </Link>
         <button
           onClick={() => setMenuOpen(!menuOpen)}
