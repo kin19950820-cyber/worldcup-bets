@@ -2,13 +2,57 @@
 
 import { revalidatePath } from "next/cache";
 import { createClient, createServiceClient } from "@/lib/supabase/server";
+import {
+  DEFAULT_PRIZE_POOL,
+  validatePrizePoolSettings,
+  type PrizePoolSettings,
+} from "@/lib/prize-pool";
 
 export type MyGroup = {
   id: string;
   name: string;
   code: string;
+  // Real-money prize-pool settings (owner-configurable).
+  is_owner: boolean;
+  buyin_amount: number;
+  rebuy_amount: number;
+  payout_first: number;
+  payout_second: number;
+  payout_third: number;
   members: { id: string; display_name: string }[];
 };
+
+// Columns to read for a group, including prize-pool settings.
+const GROUP_COLS =
+  "id, name, code, created_by, buyin_amount, rebuy_amount, payout_first, payout_second, payout_third";
+
+type GroupRow = {
+  id: string;
+  name: string;
+  code: string;
+  created_by?: string | null;
+  buyin_amount?: number | null;
+  rebuy_amount?: number | null;
+  payout_first?: number | null;
+  payout_second?: number | null;
+  payout_third?: number | null;
+};
+
+// Fold a raw groups row + the viewer id into a MyGroup shell (no members yet),
+// defaulting prize-pool settings when the migration hasn't been applied.
+function toGroupShell(row: GroupRow, userId: string): Omit<MyGroup, "members"> {
+  return {
+    id: row.id,
+    name: row.name,
+    code: row.code,
+    is_owner: row.created_by === userId,
+    buyin_amount: row.buyin_amount ?? DEFAULT_PRIZE_POOL.buyinAmount,
+    rebuy_amount: row.rebuy_amount ?? DEFAULT_PRIZE_POOL.rebuyAmount,
+    payout_first: row.payout_first ?? DEFAULT_PRIZE_POOL.payoutFirst,
+    payout_second: row.payout_second ?? DEFAULT_PRIZE_POOL.payoutSecond,
+    payout_third: row.payout_third ?? DEFAULT_PRIZE_POOL.payoutThird,
+  };
+}
 
 // Normalise a user-chosen group code: uppercase A-Z/0-9, 4–10 chars.
 function normalizeCode(raw: string): string | null {
@@ -30,7 +74,15 @@ async function membersOf(
     .sort((a, b) => a.display_name.localeCompare(b.display_name));
 }
 
-// All groups the signed-in player belongs to (with members).
+function extractGroups(
+  data: { groups: unknown }[] | null
+): GroupRow[] {
+  return (data ?? [])
+    .map((row) => row.groups as unknown as GroupRow | null)
+    .filter((g): g is GroupRow => g !== null);
+}
+
+// All groups the signed-in player belongs to (with members + pool settings).
 export async function getMyGroups(): Promise<MyGroup[]> {
   const supabase = await createClient();
   const service = createServiceClient();
@@ -39,39 +91,48 @@ export async function getMyGroups(): Promise<MyGroup[]> {
   } = await supabase.auth.getUser();
   if (!user) return [];
 
-  const { data: memberships, error } = await service
-    .from("group_members")
-    .select("groups(id, name, code)")
-    .eq("user_id", user.id);
+  // Preferred: membership join with full prize-pool columns. Degrade gracefully
+  // if the pool columns (or the group_members table) aren't migrated yet.
+  let rows: GroupRow[] | null = null;
 
-  // Fallback: if the group_members migration isn't applied yet, use the legacy
-  // single primary group so the UI keeps working.
-  if (error) {
-    const { data: profile } = await service
-      .from("profiles")
-      .select("groups(id, name, code)")
-      .eq("id", user.id)
-      .maybeSingle();
-    const g = profile?.groups as unknown as
-      | { id: string; name: string; code: string }
-      | { id: string; name: string; code: string }[]
-      | null;
-    const primary = Array.isArray(g) ? g[0] ?? null : g;
-    if (!primary) return [];
-    return [{ ...primary, members: await legacyMembersOf(service, primary.id) }];
+  const full = await service
+    .from("group_members")
+    .select(`groups(${GROUP_COLS})`)
+    .eq("user_id", user.id);
+  if (!full.error) {
+    rows = extractGroups(full.data);
+  } else {
+    const basic = await service
+      .from("group_members")
+      .select("groups(id, name, code, created_by)")
+      .eq("user_id", user.id);
+    if (!basic.error) rows = extractGroups(basic.data);
   }
 
-  const groups = (memberships ?? [])
-    .map((row) => row.groups as unknown as { id: string; name: string; code: string } | null)
-    .filter((g): g is { id: string; name: string; code: string } => g !== null)
-    .sort((a, b) => a.name.localeCompare(b.name));
+  // group_members table itself is missing — legacy single-group fallback.
+  if (rows === null) {
+    const { data: profile } = await service
+      .from("profiles")
+      .select("groups(id, name, code, created_by)")
+      .eq("id", user.id)
+      .maybeSingle();
+    const g = profile?.groups as unknown as GroupRow | GroupRow[] | null;
+    const primary = Array.isArray(g) ? g[0] ?? null : g;
+    if (!primary) return [];
+    return [
+      {
+        ...toGroupShell(primary, user.id),
+        members: await legacyMembersOf(service, primary.id),
+      },
+    ];
+  }
+
+  const shells = rows.sort((a, b) => a.name.localeCompare(b.name));
 
   return Promise.all(
-    groups.map(async (g) => ({
-      id: g.id,
-      name: g.name,
-      code: g.code,
-      members: await membersOf(service, g.id),
+    shells.map(async (row) => ({
+      ...toGroupShell(row, user.id),
+      members: await membersOf(service, row.id),
     }))
   );
 }
@@ -156,6 +217,51 @@ export async function joinGroup(code: string) {
   await service.from("profiles").update({ group_id: group.id }).eq("id", user.id);
   revalidatePath("/leaderboard");
   revalidatePath("/dashboard");
+  return { success: true };
+}
+
+// Owner-only: set the group's real-money buy-in amounts and 冠/亞/季 split.
+export async function updateGroupSettings(
+  groupId: string,
+  settings: PrizePoolSettings
+) {
+  const supabase = await createClient();
+  const service = createServiceClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { error: "未登入" };
+
+  const invalid = validatePrizePoolSettings(settings);
+  if (invalid) return { error: invalid };
+
+  // Only the group creator may change the pool settings.
+  const { data: group } = await service
+    .from("groups")
+    .select("created_by")
+    .eq("id", groupId)
+    .maybeSingle();
+  if (!group) return { error: "找不到此群組" };
+  if (group.created_by !== user.id) return { error: "只有群組建立者可設定彩池" };
+
+  const { error } = await service
+    .from("groups")
+    .update({
+      buyin_amount: settings.buyinAmount,
+      rebuy_amount: settings.rebuyAmount,
+      payout_first: settings.payoutFirst,
+      payout_second: settings.payoutSecond,
+      payout_third: settings.payoutThird,
+    })
+    .eq("id", groupId);
+  if (error) {
+    if (error.code === "42703") {
+      return { error: "資料庫尚未套用彩池遷移，請聯絡管理員" };
+    }
+    return { error: error.message };
+  }
+
+  revalidatePath("/leaderboard");
   return { success: true };
 }
 
