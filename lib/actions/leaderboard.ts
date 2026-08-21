@@ -19,6 +19,15 @@ export async function getLeaderboard(): Promise<{ entries: LeaderboardEntry[] }>
   const supabase = await createClient();
   const service = createServiceClient();
 
+  // Authorize the caller, then read the public leaderboard data with the
+  // service client. The leaderboard shows every player, so RLS-scoped reads
+  // (which can come back empty on a stale/edge session) are the wrong tool
+  // here — the same reason transactions/group_members already use service.
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { entries: [] };
+
   const [
     profilesRes,
     betsRes,
@@ -27,12 +36,12 @@ export async function getLeaderboard(): Promise<{ entries: LeaderboardEntry[] }>
     membersRes,
     seasonPlayersRes,
   ] = await Promise.all([
-      supabase
+      service
         .from("profiles")
         .select(
           "id, display_name, current_balance, starting_fund, created_at, group_id, groups(name)"
         ),
-      supabase
+      service
         .from("bets")
         .select("id, user_id, bet_type, status, stake, payout, odds, created_at, settled_at"),
       service
