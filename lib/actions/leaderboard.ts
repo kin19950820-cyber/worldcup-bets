@@ -35,11 +35,12 @@ export async function getLeaderboard(): Promise<{ entries: LeaderboardEntry[] }>
     historyRes,
     membersRes,
     seasonPlayersRes,
+    groupsRes,
   ] = await Promise.all([
       service
         .from("profiles")
         .select(
-          "id, display_name, current_balance, starting_fund, created_at, group_id, groups(name)"
+          "id, display_name, current_balance, starting_fund, created_at, group_id"
         ),
       service
         .from("bets")
@@ -60,7 +61,16 @@ export async function getLeaderboard(): Promise<{ entries: LeaderboardEntry[] }>
         .from("season_players")
         .select("user_id, outstanding_debt, loan_count")
         .eq("season_id", getActiveSeason().id),
+      service.from("groups").select("id, name"),
     ]);
+
+  // Legacy primary group name, looked up separately to avoid an ambiguous
+  // PostgREST embed (profiles ↔ groups now has two FK paths).
+  const groupNameById = new Map(
+    (
+      (groupsRes.data as { id: string; name: string }[] | null) ?? []
+    ).map((g) => [g.id, g.name])
+  );
 
   const profiles = profilesRes.data ?? [];
   const bets = betsRes.data ?? [];
@@ -176,14 +186,11 @@ export async function getLeaderboard(): Promise<{ entries: LeaderboardEntry[] }>
       Math.min(...netBalanceHistory, netBalance).toFixed(2)
     );
 
-    const groups = p.groups as unknown as { name: string }[] | { name: string } | null;
-    const group = Array.isArray(groups) ? groups[0] ?? null : groups;
-
     return {
       id: p.id,
       display_name: p.display_name,
       group_id: p.group_id,
-      group_name: group?.name ?? null,
+      group_name: p.group_id ? groupNameById.get(p.group_id) ?? null : null,
       group_ids: groupsByUser.get(p.id) ?? [],
       current_balance: p.current_balance,
       net_balance: netBalance,
