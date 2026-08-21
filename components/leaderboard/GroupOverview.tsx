@@ -121,7 +121,7 @@ export default function GroupOverview({
                         : "text-slate-500"
                     )}
                   >
-                    {m.loan_count} / 2
+                    {m.loan_count}
                   </span>
                 </td>
                 <td className="py-2 pl-2 text-right">
