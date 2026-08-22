@@ -140,7 +140,10 @@ function analyzeClubFixture(
     eloExpectancy,
     modelAgreement,
     confidence,
-    stakingAllowed: clubBacktestData.roi.roi > 0,
+    // Season 2 is the Premier League, so the club model is the primary tool:
+    // surface its value markers and suggested stakes. The (historically
+    // negative) backtest ROI is kept as an on-page caveat, not a hard mute.
+    stakingAllowed: true,
     marginDist: [...marginDistribution(matrix).entries()],
     totalDist: [...totalDistribution(matrix).entries()],
     matrix,
@@ -149,8 +152,17 @@ function analyzeClubFixture(
 
 export function analyzeFixture(
   homeName: string,
-  awayName: string
+  awayName: string,
+  preferClub = false
 ): MatchAnalysis | null {
+  // For Premier League fixtures route to the club model first, so an EPL club
+  // that happens to share a name with a national side never grabs the
+  // international model by accident.
+  if (preferClub) {
+    const club = analyzeClubFixture(homeName, awayName);
+    if (club) return club;
+  }
+
   const homeKey = resolveDatasetTeam(homeName, ratingKeys);
   const awayKey = resolveDatasetTeam(awayName, ratingKeys);
   // Not an international fixture — try the club (EPL) model instead.
