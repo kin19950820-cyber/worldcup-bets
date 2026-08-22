@@ -47,17 +47,21 @@ export default async function QuantPage() {
   const meta = getModelMeta();
 
   const allBoards = fixtures.map((match) => {
-    const analysis = analyzeFixture(match.home_team, match.away_team);
+    // Season 2 = Premier League: EPL fixtures (stage 英超) use the club model
+    // first; internationals keep the international model.
+    const preferClub = match.stage === "英超";
+    const analysis = analyzeFixture(match.home_team, match.away_team, preferClub);
     const options = optionsByMatchId[match.id] ?? [];
     const rows = analysis
       ? evaluateOptions(options, match.home_team, match.away_team, analysis)
       : [];
     return { match, analysis, rows };
   });
-  // The model is trained on international matches; club fixtures (英超 etc.)
-  // are outside its scope and are summarised rather than listed.
+  // Both models produce an analysis; only fixtures neither model can match a
+  // team for are dropped.
   const boards = allBoards.filter((board) => board.analysis !== null);
   const outOfScopeCount = allBoards.length - boards.length;
+  const clubBoards = boards.filter((b) => b.analysis?.modelScope === "club").length;
 
   const totalValueBets = boards.reduce(
     (sum, board) => sum + board.rows.filter((row) => row.isValue).length,
@@ -107,8 +111,11 @@ export default async function QuantPage() {
         </div>
         <div className="border-t border-slate-800 pt-3">
           <div className="mb-2 flex items-center justify-between">
-            <h3 className="text-xs font-semibold text-slate-400">
+            <h3 className="flex items-center gap-1.5 text-xs font-semibold text-slate-300">
               英超模型（球會賽）
+              <span className="rounded-full bg-brand-500/15 px-1.5 py-0.5 text-[10px] text-brand-300">
+                本季主用
+              </span>
             </h3>
             <span className="text-[11px] text-slate-600">
               {meta.club.totalMatches.toLocaleString()} 場英格蘭聯賽 · 截至 {meta.club.lastMatchDate}
@@ -136,10 +143,16 @@ export default async function QuantPage() {
           </div>
         </div>
         <p className="text-[11px] leading-relaxed text-slate-600">
-          回測為 {meta.backtest.evalStart} 起的走前（walk-forward）驗證，全部樣本外。模型機率為獨立統計估算，並非複製馬會賠率。英超模型附有對
-          Bet365 收盤賠率的真實 ROI 回測——結果為負，即模型未能跑贏市場收盤價；英超價值標記只可作參考，切勿當成必勝提示。
+          本季（英超）以球會模型為主。回測為 {meta.backtest.evalStart} 起的走前（walk-forward）驗證，全部樣本外。模型機率為獨立統計估算，並非複製馬會賠率。英超模型附有對
+          Bet365 收盤賠率的真實 ROI 回測——結果為負，即模型未能穩定跑贏市場收盤價；因此英超的價值標記與建議注碼只作參考，切勿當成必勝提示。
         </p>
       </div>
+
+      {clubBoards > 0 && (
+        <p className="text-xs text-slate-500">
+          本次以英超模型分析 {clubBoards} 場球會賽事。
+        </p>
+      )}
 
       {outOfScopeCount > 0 && (
         <p className="text-xs text-slate-600">
@@ -247,9 +260,9 @@ export default async function QuantPage() {
               ) : (
                 <>
                   <OptionsTable rows={rows.slice(0, MAX_ROWS_PER_MATCH)} balance={balance} />
-                  {analysis.modelScope === "club" && !analysis.stakingAllowed && (
+                  {analysis.modelScope === "club" && (
                     <p className="text-[11px] text-amber-400/70">
-                      英超模型回測錄得負回報，已停用價值標記及建議注碼；目前資料只供比較模型與市場分歧。
+                      英超模型回測 ROI 為負，價值標記與建議注碼僅供參考，切勿當成必勝提示。
                     </p>
                   )}
                 </>
