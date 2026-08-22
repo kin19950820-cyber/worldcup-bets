@@ -47,6 +47,11 @@ const STATUS_COLORS: Record<string, string> = {
 
 const BETS_PER_PAGE = 20;
 
+// Outright markets (冠軍 / 神射手) live on virtual "特別項目" matches and only
+// settle at season end, so they're hidden from the board by default.
+const OUTRIGHT_STAGE = "特別項目";
+const isOutrightBet = (b: BetRow) => b.matches?.stage === OUTRIGHT_STAGE;
+
 type SortKey =
   | "newest"
   | "oldest"
@@ -69,9 +74,15 @@ export default function PublicBetsTable({ initialBets, matches, players }: Props
   const [filterStatus, setFilterStatus] = useState("all");
   const [filterType, setFilterType] = useState("all");
   const [sortBy, setSortBy] = useState<SortKey>("newest");
+  const [showOutrights, setShowOutrights] = useState(false);
   const [page, setPage] = useState(1);
 
+  const outrightCount = initialBets.filter(isOutrightBet).length;
+
   const filtered = initialBets.filter((b) => {
+    // Season-end outrights (冠軍等) are hidden unless explicitly shown.
+    if (!showOutrights && isOutrightBet(b)) return false;
+
     const parlay = parseParlay(b.selection);
     const displayStatus = parlay
       ? b.status
@@ -118,7 +129,7 @@ export default function PublicBetsTable({ initialBets, matches, players }: Props
 
   useEffect(() => {
     setPage(1);
-  }, [filterMatch, filterPlayer, filterStatus, filterType, sortBy]);
+  }, [filterMatch, filterPlayer, filterStatus, filterType, sortBy, showOutrights]);
 
   useEffect(() => {
     setPage((current) => Math.min(current, totalPages));
@@ -177,7 +188,7 @@ export default function PublicBetsTable({ initialBets, matches, players }: Props
         </button>
       </div>
 
-      <div className="flex items-center gap-2">
+      <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
         <label className="shrink-0 text-xs text-slate-500">排序</label>
         <select
           value={sortBy}
@@ -192,6 +203,18 @@ export default function PublicBetsTable({ initialBets, matches, players }: Props
           <option value="odds">賠率最高</option>
           <option value="actual">實際賠率最高</option>
         </select>
+
+        {outrightCount > 0 && (
+          <label className="flex cursor-pointer items-center gap-1.5 text-xs text-slate-400">
+            <input
+              type="checkbox"
+              checked={showOutrights}
+              onChange={(e) => setShowOutrights(e.target.checked)}
+              className="h-3.5 w-3.5 accent-brand-500"
+            />
+            顯示冠軍等季尾賽果（{outrightCount}）
+          </label>
+        )}
       </div>
 
       <div className="flex items-center justify-between gap-3 text-xs text-slate-500">
