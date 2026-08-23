@@ -49,17 +49,40 @@ function getRankTitle(index: number, total: number) {
   return null;
 }
 
+// Fun "current form" title from the signed current streak.
+function FormTitle({ current }: { current: number }) {
+  if (current >= 3) {
+    return (
+      <span className="inline-flex items-center rounded-full bg-orange-500/15 px-1.5 py-0.5 text-[10px] font-semibold text-orange-300">
+        🔥 火熱手感（{current} 連勝）
+      </span>
+    );
+  }
+  if (current <= -3) {
+    return (
+      <span className="inline-flex items-center rounded-full bg-sky-500/15 px-1.5 py-0.5 text-[10px] font-semibold text-sky-300">
+        🧊 冰封期（{Math.abs(current)} 連敗）
+      </span>
+    );
+  }
+  return null;
+}
+
 function StreakBadges({
   winStreak,
   lossStreak,
+  currentStreak,
 }: {
   winStreak: number;
   lossStreak: number;
+  currentStreak: number;
 }) {
-  if (winStreak < 2 && lossStreak < 2) return null;
+  const hasForm = currentStreak >= 3 || currentStreak <= -3;
+  if (winStreak < 2 && lossStreak < 2 && !hasForm) return null;
 
   return (
     <span className="mt-1 flex flex-wrap items-center gap-1">
+      <FormTitle current={currentStreak} />
       {winStreak >= 2 && (
         <span className="inline-flex items-center rounded-full bg-emerald-500/15 px-1.5 py-0.5 text-[10px] font-semibold text-emerald-300">
           🔥 {winStreak} 連勝
@@ -181,6 +204,7 @@ export default function LeaderboardTable({ entries }: { entries: LeaderboardEntr
                   <StreakBadges
                     winStreak={e.longest_win_streak}
                     lossStreak={e.longest_loss_streak}
+                    currentStreak={e.current_streak}
                   />
                 </div>
                 <div className="text-right shrink-0">
@@ -240,6 +264,7 @@ export default function LeaderboardTable({ entries }: { entries: LeaderboardEntr
                 <StreakBadges
                   winStreak={e.longest_win_streak}
                   lossStreak={e.longest_loss_streak}
+                  currentStreak={e.current_streak}
                 />
               </span>
               <span className="text-right">

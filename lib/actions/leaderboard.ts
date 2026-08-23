@@ -211,8 +211,16 @@ export async function getLeaderboard(): Promise<{ entries: LeaderboardEntry[] }>
         return byCreated !== 0 ? byCreated : String(a.id).localeCompare(String(b.id));
       })
       .map((bet) => classifyBetOutcome(bet));
-    const { longestWin, longestLoss } = computeStreaks(settledAscending);
+    const { longestWin, longestLoss, current: currentStreak } =
+      computeStreaks(settledAscending);
     const recentResults = settledAscending.slice(-10).reverse();
+    const totalStake = parseFloat(
+      userBets.reduce((s, b) => s + b.stake, 0).toFixed(2)
+    );
+    const roi =
+      totalStake > 0
+        ? parseFloat(((netBalance - startingFund) / totalStake).toFixed(4))
+        : 0;
     const netBalanceHistory = balanceHistory.map((point) => point.net_balance);
     const historicalHigh = parseFloat(
       Math.max(...netBalanceHistory, netBalance).toFixed(2)
@@ -238,12 +246,12 @@ export async function getLeaderboard(): Promise<{ entries: LeaderboardEntry[] }>
       total_void: voidBets.length,
       total_pending: pending.length,
       win_rate: settled > 0 ? parseFloat((winScore / settled).toFixed(4)) : 0,
-      total_stake: parseFloat(
-        userBets.reduce((s, b) => s + b.stake, 0).toFixed(2)
-      ),
+      total_stake: totalStake,
       loan_count: loanCount,
       longest_win_streak: longestWin,
       longest_loss_streak: longestLoss,
+      current_streak: currentStreak,
+      roi,
       historical_high: historicalHigh,
       historical_low: historicalLow,
       is_active: isActivePlayer(p.id),

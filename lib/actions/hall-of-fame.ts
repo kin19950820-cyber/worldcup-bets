@@ -43,8 +43,8 @@ export async function getHallOfFame(seasonId: number) {
   const { startMs, endMs, endDate } = seasonWindow(season);
 
   const [profilesRes, betsRes, transactionsRes] = await Promise.all([
-    supabase.from("profiles").select("id, display_name, starting_fund"),
-    supabase
+    service.from("profiles").select("id, display_name, starting_fund"),
+    service
       .from("bets")
       .select("user_id, bet_type, selection, odds, stake, payout, status, created_at"),
     service
@@ -71,6 +71,10 @@ export async function getHallOfFame(seasonId: number) {
     wins: number;
     bestMultiplier: number;
     bestMultiplierDetail: string;
+    biggestWinOdds: number;
+    biggestWinOddsDetail: string;
+    biggestLoss: number;
+    biggestLossDetail: string;
     endNetWorth: number;
     longestWinStreak: number;
     longestLossStreak: number;
@@ -85,11 +89,21 @@ export async function getHallOfFame(seasonId: number) {
       let wins = 0;
       let bestMultiplier = 0;
       let bestMultiplierDetail = "";
+      let biggestWinOdds = 0;
+      let biggestWinOddsDetail = "";
+      let biggestLoss = 0;
+      let biggestLossDetail = "";
       for (const bet of bets) {
         if (["won", "half_won", "lost", "half_lost"].includes(bet.status)) {
           settled += 1;
           if (bet.status === "won" || bet.status === "half_won") wins += 1;
         }
+        const betLabel = () => {
+          const parlay = parseParlay(bet.selection);
+          return parlay
+            ? `${parlay.legs.length} 關過關 @ ${bet.odds}`
+            : `${bet.bet_type} @ ${bet.odds}`;
+        };
         if (
           (bet.status === "won" || bet.status === "half_won") &&
           bet.payout > 0 &&
@@ -98,10 +112,22 @@ export async function getHallOfFame(seasonId: number) {
           const multiplier = bet.payout / bet.stake;
           if (multiplier > bestMultiplier) {
             bestMultiplier = multiplier;
-            const parlay = parseParlay(bet.selection);
-            bestMultiplierDetail = parlay
-              ? `${parlay.legs.length} 關過關 @ ${bet.odds}`
-              : `${bet.bet_type} @ ${bet.odds}`;
+            bestMultiplierDetail = betLabel();
+          }
+          // Biggest upset = highest odds on a winning bet.
+          if (bet.odds > biggestWinOdds) {
+            biggestWinOdds = bet.odds;
+            biggestWinOddsDetail = `${betLabel()} · ${formatCurrency(
+              bet.stake
+            )} → ${formatCurrency(bet.payout)}`;
+          }
+        }
+        // Biggest bottle = largest net loss from a single bet.
+        if (bet.status === "lost" || bet.status === "half_lost") {
+          const loss = bet.stake - bet.payout;
+          if (loss > biggestLoss) {
+            biggestLoss = loss;
+            biggestLossDetail = `${betLabel()} · 蝕 ${formatCurrency(loss)}`;
           }
         }
       }
@@ -137,6 +163,10 @@ export async function getHallOfFame(seasonId: number) {
         wins,
         bestMultiplier,
         bestMultiplierDetail,
+        biggestWinOdds,
+        biggestWinOddsDetail,
+        biggestLoss,
+        biggestLossDetail,
         endNetWorth: Math.round((endBalance - loanOwed) * 100) / 100,
         longestWinStreak: streaks.longestWin,
         longestLossStreak: streaks.longestLoss,
@@ -187,6 +217,34 @@ export async function getHallOfFame(seasonId: number) {
         name: p.name,
         value: `×${p.bestMultiplier.toFixed(2)}`,
         detail: p.bestMultiplierDetail,
+      })),
+    },
+    {
+      key: "biggest-upset",
+      icon: "🌚",
+      title: "最大冷門",
+      description: "最高賠率的贏注",
+      winners: topBy(
+        players.filter((p) => p.biggestWinOdds > 0),
+        (p) => p.biggestWinOdds
+      ).map((p) => ({
+        name: p.name,
+        value: `@ ${p.biggestWinOdds.toFixed(2)}`,
+        detail: p.biggestWinOddsDetail,
+      })),
+    },
+    {
+      key: "biggest-bottle",
+      icon: "💥",
+      title: "爆煲王",
+      description: "單注最大虧損",
+      winners: topBy(
+        players.filter((p) => p.biggestLoss > 0),
+        (p) => p.biggestLoss
+      ).map((p) => ({
+        name: p.name,
+        value: formatCurrency(p.biggestLoss),
+        detail: p.biggestLossDetail,
       })),
     },
     {

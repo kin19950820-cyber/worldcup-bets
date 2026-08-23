@@ -5,6 +5,7 @@ import type { LeaderboardEntry } from "@/lib/types";
 import type { MyGroup } from "@/lib/actions/groups";
 import LeaderboardTable from "@/components/leaderboard/LeaderboardTable";
 import StreakHighlights from "@/components/leaderboard/StreakHighlights";
+import RoiRanking from "@/components/leaderboard/RoiRanking";
 import GroupPanel from "@/components/leaderboard/GroupPanel";
 import GroupOverview from "@/components/leaderboard/GroupOverview";
 
@@ -58,6 +59,7 @@ export default function LeaderboardView({
       )}
 
       <StreakHighlights entries={visible} />
+      <RoiRanking entries={visible} />
       <LeaderboardTable entries={visible} />
     </div>
   );
