@@ -21,6 +21,7 @@ const navItems = [
 ];
 
 const menuItems = [
+  { href: "/weekly", label: "每週戰報", icon: "📅" },
   { href: "/quant", label: "量化分析", icon: "📈" },
   { href: "/hall-of-fame", label: "名人堂", icon: "🏛️" },
 ];
