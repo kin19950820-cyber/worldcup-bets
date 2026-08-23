@@ -24,10 +24,10 @@ export default async function AdminLoansPage() {
   return (
     <div className="mx-auto max-w-2xl px-4 py-6">
       <h1 className="mb-1 flex items-center gap-2 text-xl font-bold text-white">
-        💸 借款批核
+        💸 買入批核
       </h1>
       <p className="mb-6 text-sm text-slate-400">
-        {seasonName ?? "本季"} · 每筆固定借入 $500（欠 $550）；每人每季最多兩次
+        {seasonName ?? "本季"} · 每筆固定買入 $500（欠 $500，免手續費）；買入次數無限
       </p>
       {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
       <LoanRequestList requests={(requests as any) ?? []} />

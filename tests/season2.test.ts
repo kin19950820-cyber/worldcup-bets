@@ -43,7 +43,7 @@ describe("loan eligibility", () => {
       loanCount: 0,
     });
     expect(r.allowed).toBe(false);
-    expect(r.reason).toBe("現時餘額須為 $100 或以下才可借款");
+    expect(r.reason).toBe("現時餘額須為 $100 或以下才可買入");
   });
 
   it("balance $0, debt $550 => rejected for debt", () => {
@@ -69,29 +69,28 @@ describe("loan eligibility", () => {
 // --------------------------------------------------------------------------
 // Loan creation
 // --------------------------------------------------------------------------
-describe("loan creation", () => {
-  it("adds exactly $500 cash, $550 debt, +1 loan", () => {
+describe("buy-in creation", () => {
+  it("adds exactly $500 cash, $500 debt, +1 buy-in (no fee)", () => {
     const { state, ledger } = applyLoan({
       currentBalance: 40,
       outstandingDebt: 0,
       loanCount: 0,
     });
     expect(state.currentBalance).toBe(540);
-    expect(state.outstandingDebt).toBe(550);
+    expect(state.outstandingDebt).toBe(500);
     expect(state.loanCount).toBe(1);
 
     const principal = ledger.find((e) => e.type === "loan_principal")!;
-    const fee = ledger.find((e) => e.type === "loan_fee")!;
     expect(principal.amount).toBe(500);
     expect(principal.affectsCash).toBe(true);
-    expect(fee.amount).toBe(50);
-    expect(fee.affectsCash).toBe(false); // fee never becomes usable cash
+    // No fee entry: the full amount is cash.
+    expect(ledger.find((e) => e.type === "loan_fee")).toBeUndefined();
   });
 
-  it("constants match the spec", () => {
+  it("constants match the spec (no fee)", () => {
     expect(SEASON2_LOAN.amount).toBe(500);
-    expect(SEASON2_LOAN.fee).toBe(50);
-    expect(SEASON2_LOAN.debt).toBe(550);
+    expect(SEASON2_LOAN.fee).toBe(0);
+    expect(SEASON2_LOAN.debt).toBe(500);
   });
 });
 
@@ -99,18 +98,18 @@ describe("loan creation", () => {
 // Debt-first repayment
 // --------------------------------------------------------------------------
 describe("automatic debt repayment", () => {
-  it("payout $300 vs debt $550 => debt $250, cash $0", () => {
-    const r = applyDebtRepayment(300, 550);
+  it("payout $300 vs debt $500 => debt $200, cash $0", () => {
+    const r = applyDebtRepayment(300, 500);
     expect(r.debtRepaid).toBe(300);
-    expect(r.newDebt).toBe(250);
+    expect(r.newDebt).toBe(200);
     expect(r.cashCredited).toBe(0);
   });
 
-  it("payout $800 vs debt $550 => debt $0, cash $250", () => {
-    const r = applyDebtRepayment(800, 550);
-    expect(r.debtRepaid).toBe(550);
+  it("payout $800 vs debt $500 => debt $0, cash $300", () => {
+    const r = applyDebtRepayment(800, 500);
+    expect(r.debtRepaid).toBe(500);
     expect(r.newDebt).toBe(0);
-    expect(r.cashCredited).toBe(250);
+    expect(r.cashCredited).toBe(300);
   });
 
   it("payout with no debt credits all cash", () => {

@@ -193,7 +193,7 @@ export async function getHallOfFame(seasonId: number) {
       key: "richest",
       icon: "👑",
       title: "大富翁",
-      description: "季末身家最多（扣除借款）",
+      description: "季末身家最多（扣除欠款）",
       winners: topBy(players, (p) => p.endNetWorth).map((p) => ({
         name: p.name,
         value: formatCurrency(p.endNetWorth),
@@ -203,7 +203,7 @@ export async function getHallOfFame(seasonId: number) {
       key: "poorest",
       icon: "🪂",
       title: "天台常客",
-      description: "季末身家最少（扣除借款）",
+      description: "季末身家最少（扣除欠款）",
       winners: topBy(players, (p) => p.endNetWorth, "min").map((p) => ({
         name: p.name,
         value: formatCurrency(p.endNetWorth),

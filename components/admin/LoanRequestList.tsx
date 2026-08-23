@@ -43,7 +43,7 @@ export default function LoanRequestList({ requests }: { requests: Request[] }) {
     return (
       <div className="card p-12 text-center text-slate-500">
         <div className="mb-3 text-4xl">💸</div>
-        <p>暫無待批核的借款申請</p>
+        <p>暫無待批核的買入申請</p>
       </div>
     );
   }
@@ -67,10 +67,10 @@ export default function LoanRequestList({ requests }: { requests: Request[] }) {
                   {request.profiles?.display_name ?? "—"}
                 </p>
                 <p className="text-xs text-slate-500">
-                  借 {formatCurrency(request.amount)} · 欠{" "}
+                  買入 {formatCurrency(request.amount)} · 欠{" "}
                   {formatCurrency(request.amount + request.fee)}
                   {sp &&
-                    ` · 餘額 ${formatCurrency(sp.current_balance)} · 已借 ${sp.loan_count} 次`}
+                    ` · 餘額 ${formatCurrency(sp.current_balance)} · 已買入 ${sp.loan_count} 次`}
                 </p>
                 {!eligibility.allowed && (
                   <p className="mt-0.5 text-[11px] text-red-400">

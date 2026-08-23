@@ -16,7 +16,7 @@ type Props = {
 };
 
 const CONFIRM_MESSAGE =
-  "你將借入 $500，並產生 $550 欠款。贏取的派彩會優先用作還款。每季最多借款兩次。";
+  "你將買入 $500，並產生 $500 欠款（免手續費）。贏取的派彩會優先用作還款。買入次數無限。";
 
 export default function Season2LoanCard({
   currentBalance,
@@ -37,7 +37,7 @@ export default function Season2LoanCard({
         toast.error(result.error);
         return;
       }
-      toast.success("已提交借款申請，待管理員批核");
+      toast.success("已提交買入申請，待管理員批核");
       window.location.reload();
     });
   };
@@ -45,9 +45,9 @@ export default function Season2LoanCard({
   return (
     <div className="card p-4 space-y-3 border-orange-500/30">
       <div className="flex items-center justify-between">
-        <h2 className="font-semibold text-white">借錢搏一搏</h2>
+        <h2 className="font-semibold text-white">買入搏一搏</h2>
         <span className="text-xs text-orange-400">
-          借款會從龍虎榜資產扣除
+          買入會從龍虎榜資產扣除
         </span>
       </div>
 
@@ -77,8 +77,8 @@ export default function Season2LoanCard({
         {pending
           ? "申請中…"
           : eligible
-          ? `借入 $${SEASON2_LOAN.amount}（欠 $${SEASON2_LOAN.debt}）`
-          : reason ?? "暫不符合借款資格"}
+          ? `買入 $${SEASON2_LOAN.amount}（欠 $${SEASON2_LOAN.debt}）`
+          : reason ?? "暫不符合買入資格"}
       </button>
     </div>
   );
