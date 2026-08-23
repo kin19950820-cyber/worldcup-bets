@@ -27,7 +27,7 @@ const menuItems = [
 
 const adminItems = [
   { href: "/admin/settle", label: "結算", icon: "⚖️" },
-  { href: "/admin/loans", label: "借款", icon: "💸" },
+  { href: "/admin/loans", label: "買入", icon: "💸" },
   { href: "/admin/matches", label: "管理", icon: "🔄" },
 ];
 

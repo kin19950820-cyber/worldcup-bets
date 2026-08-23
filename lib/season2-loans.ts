@@ -1,22 +1,22 @@
-// Season 2 loan rules — pure, side-effect-free logic shared by the server
-// action, the Postgres RPC's TypeScript mirror, and the test suite.
+// Season 2 buy-in (rebuy) rules — pure, side-effect-free logic shared by the
+// server action, the Postgres RPC's TypeScript mirror, and the test suite.
 //
 // Rules (Season 2 only):
-//   * Each loan is exactly $500, with a fixed $50 fee → $550 debt created.
-//   * Only $500 is credited to usable cash; the $50 fee is debt-only.
-//   * Eligible only when: cash <= $100 AND debt == 0 (rebuy count is unlimited).
-//   * Cannot re-borrow until the previous loan is fully repaid.
-//   * While in debt: max single stake $100, no parlays, no new loans.
+//   * Each buy-in is exactly $500 — no fee, no interest → $500 debt created.
+//   * The full $500 is credited to usable cash.
+//   * Eligible only when: cash <= $100 AND debt == 0 (buy-in count is unlimited).
+//   * Cannot buy in again until the previous buy-in is fully repaid.
+//   * While in debt: max single stake $100, no parlays, no new buy-ins.
 //   * Winning payouts repay outstanding debt first, remainder becomes cash.
 
-// Season 2 base (starting) balance. Each player begins with this; a rebuy
-// (loan) is a fixed $500 regardless of the base.
+// Season 2 base (starting) balance. Each player begins with this; a buy-in
+// (rebuy) is a fixed $500 regardless of the base.
 export const SEASON2_STARTING_BALANCE = 1000;
 
 export const SEASON2_LOAN = {
   amount: 500,
-  fee: 50,
-  debt: 550, // amount + fee
+  fee: 0,
+  debt: 500, // no fee/interest: debt equals the amount bought in
   eligibleBalanceAtMost: 100,
   indebtedMaxStake: 100,
 } as const;
@@ -41,7 +41,7 @@ export function loanEligibility(state: SeasonPlayerState): LoanEligibility {
     return { allowed: false, reason: "請先清還現有欠款" };
   }
   if (state.currentBalance > SEASON2_LOAN.eligibleBalanceAtMost) {
-    return { allowed: false, reason: "現時餘額須為 $100 或以下才可借款" };
+    return { allowed: false, reason: "現時餘額須為 $100 或以下才可買入" };
   }
   return { allowed: true, reason: null };
 }
@@ -57,8 +57,9 @@ export type LoanApplication = {
   ledger: LoanLedgerEntry[];
 };
 
-// Applies one $500 loan to a player state. Caller must have checked eligibility
-// (the DB RPC re-checks under a row lock to stay race-safe).
+// Applies one $500 buy-in to a player state. Caller must have checked
+// eligibility (the DB RPC re-checks under a row lock to stay race-safe). No
+// fee: the full amount is cash and the debt equals the amount.
 export function applyLoan(state: SeasonPlayerState): LoanApplication {
   return {
     state: {
@@ -68,7 +69,6 @@ export function applyLoan(state: SeasonPlayerState): LoanApplication {
     },
     ledger: [
       { type: "loan_principal", amount: SEASON2_LOAN.amount, affectsCash: true },
-      { type: "loan_fee", amount: SEASON2_LOAN.fee, affectsCash: false },
     ],
   };
 }

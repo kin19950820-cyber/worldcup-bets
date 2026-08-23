@@ -190,7 +190,7 @@ export default function LeaderboardTable({ entries }: { entries: LeaderboardEntr
                   </p>
                   {e.total_borrowed > 0 && (
                     <p className="text-xs text-orange-400 mt-0.5">
-                      現金 {formatCurrency(e.current_balance)} · 借款 {formatCurrency(e.total_borrowed)}
+                      現金 {formatCurrency(e.current_balance)} · 欠款 {formatCurrency(e.total_borrowed)}
                     </p>
                   )}
                   {e.pending_stake > 0 && (
@@ -251,7 +251,7 @@ export default function LeaderboardTable({ entries }: { entries: LeaderboardEntr
                 </span>
                 {e.total_borrowed > 0 && (
                   <span className="block text-xs text-orange-400">
-                    借 {formatCurrency(e.total_borrowed)}
+                    欠 {formatCurrency(e.total_borrowed)}
                   </span>
                 )}
                 {e.pending_stake > 0 && (
