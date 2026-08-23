@@ -62,5 +62,7 @@ export function computeStreaks(statusesAscending: string[]) {
     }
   }
 
-  return { longestWin, longestLoss };
+  // current: signed run at the end of the sequence (+ win streak, − loss streak).
+  const current = currentWin > 0 ? currentWin : currentLoss > 0 ? -currentLoss : 0;
+  return { longestWin, longestLoss, currentWin, currentLoss, current };
 }

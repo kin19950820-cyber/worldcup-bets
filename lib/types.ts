@@ -144,6 +144,8 @@ export type LeaderboardEntry = {
   loan_count: number;
   longest_win_streak: number;
   longest_loss_streak: number;
+  current_streak: number; // signed: + current win streak, − current loss streak
+  roi: number; // profit_loss / total_stake (0 when no stake)
   historical_high: number;
   historical_low: number;
   is_active: boolean;
