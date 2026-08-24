@@ -621,19 +621,27 @@ function selectionLabel(
   const selectedFirstName = selections[0]
     ? normalizeName(selections[0].str || selectionName(selections[0]) || "")
     : "";
-  const condition =
-    pool.oddsType === "HDC" || pool.oddsType === "HHA" || pool.oddsType === "FHH"
-      ? ["away", "a"].includes(selectedFirstName)
-        ? invertHandicapCondition(line.condition)
-        : line.condition
-      : pool.oddsType === "HIL" ||
-        pool.oddsType === "FHL" ||
-        pool.oddsType === "CHL" ||
-        pool.oddsType === "FCH" ||
-        pool.oddsType === "FHC" ||
-        pool.oddsType === "CHD"
-      ? line.condition
-      : undefined;
+  // Pools whose combinations carry a handicap / over-under line. Corner
+  // handicaps (CHL etc.) are true handicaps: the away TEAM's line is the
+  // inverse of the home line, so it must be flipped just like the goal
+  // handicap (HDC). Over/under selections are 大/細 — never "away" — so they
+  // keep their line unchanged.
+  const carriesCondition = [
+    "HDC",
+    "HHA",
+    "FHH",
+    "HIL",
+    "FHL",
+    "CHL",
+    "FCH",
+    "FHC",
+    "CHD",
+  ].includes(pool.oddsType);
+  const condition = carriesCondition
+    ? ["away", "a"].includes(selectedFirstName)
+      ? invertHandicapCondition(line.condition)
+      : line.condition
+    : undefined;
 
   return compactLabel([
     propPrefix
