@@ -28,6 +28,7 @@ export type PlayerInsight = {
   rebuys: number;
   biggestWin: number;
   biggestWinDetail: string;
+  biggestWinOdds: number; // highest odds on a winning bet (最大冷門)
   longestWinStreak: number;
   longestLossStreak: number;
   currentStreak: number;
@@ -94,6 +95,7 @@ export async function getPlayerInsights(): Promise<PlayerInsight[]> {
     dogs: number;
     biggestWin: number;
     biggestWinDetail: string;
+    biggestWinOdds: number;
   };
   const aggByUser = new Map<string, Agg>();
   for (const bet of (betsRes.data as BetRow[] | null) ?? []) {
@@ -107,6 +109,7 @@ export async function getPlayerInsights(): Promise<PlayerInsight[]> {
         dogs: 0,
         biggestWin: 0,
         biggestWinDetail: "",
+        biggestWinOdds: 0,
       };
     a.count += 1;
     a.oddsSum += bet.odds;
@@ -124,6 +127,7 @@ export async function getPlayerInsights(): Promise<PlayerInsight[]> {
           ? `${parlay.legs.length} 關過關 @ ${bet.odds}`
           : `${bet.bet_type} @ ${bet.odds}`;
       }
+      if (bet.odds > a.biggestWinOdds) a.biggestWinOdds = bet.odds;
     }
     aggByUser.set(bet.user_id, a);
   }
@@ -154,6 +158,7 @@ export async function getPlayerInsights(): Promise<PlayerInsight[]> {
       rebuys,
       biggestWin: a?.biggestWin ?? 0,
       biggestWinDetail: a?.biggestWinDetail ?? "",
+      biggestWinOdds: a?.biggestWinOdds ?? 0,
       longestWinStreak: e.longest_win_streak,
       longestLossStreak: e.longest_loss_streak,
       currentStreak: e.current_streak,
