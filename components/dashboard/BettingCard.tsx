@@ -1,7 +1,9 @@
 "use client";
 
+import { useState } from "react";
 import toast from "react-hot-toast";
 import type { BettingCard as CardData } from "@/lib/actions/betting-card";
+import { renderBettingCardPng } from "@/lib/betting-card-png";
 import { formatCurrency } from "@/lib/utils";
 
 const signed = (v: number) => `${v >= 0 ? "+" : ""}${formatCurrency(v)}`;
@@ -11,32 +13,6 @@ function streakText(current: number): string | null {
   if (current >= 2) return `🔥 Current：${current} 連勝`;
   if (current <= -2) return `🧊 Current：${Math.abs(current)} 連敗`;
   return null;
-}
-
-// Plain-text version for WhatsApp / IG sharing — mirrors the on-screen card.
-function buildShareText(c: CardData): string {
-  const lines: string[] = [];
-  lines.push(`⚽ ${c.name} 戰績卡（英超大亂鬥 S2）`);
-  lines.push("");
-  lines.push(`淨資產    ${formatCurrency(c.netWorth)}`);
-  lines.push(`本季盈虧  ${signed(c.profitLoss)}`);
-  lines.push(`投注 ROI  ${signedPct(c.roi)}`);
-  lines.push("");
-  const form = streakText(c.currentStreak);
-  lines.push(`🎭 ${c.style.label}${form ? `　${form}` : ""}`);
-  lines.push("");
-  lines.push(`平均賠率  ${c.avgOdds.toFixed(2)}`);
-  lines.push(`平均注碼  ${formatCurrency(c.avgStake)}`);
-  lines.push(`最大贏注  ${signed(c.biggestWin)}`);
-  lines.push(`買入      ${c.rebuys} 次`);
-  if (c.gameweekTitles.length > 0) {
-    lines.push("");
-    lines.push(`🏆 ${c.gameweekTitles.map((gw) => `GW${gw} 王者`).join("、")}`);
-  }
-  if (c.biggestUpsetOdds > 0) {
-    lines.push(`🌚 最大冷門 @${c.biggestUpsetOdds.toFixed(2)}`);
-  }
-  return lines.join("\n");
 }
 
 function Row({ label, value, accent }: { label: string; value: string; accent?: string }) {
@@ -50,22 +26,44 @@ function Row({ label, value, accent }: { label: string; value: string; accent?: 
 
 export default function BettingCard({ card }: { card: CardData }) {
   const form = streakText(card.currentStreak);
+  const [busy, setBusy] = useState(false);
 
   const share = async () => {
-    const text = buildShareText(card);
-    if (typeof navigator !== "undefined" && navigator.share) {
-      try {
-        await navigator.share({ title: `${card.name} 戰績卡`, text });
-        return;
-      } catch {
-        // user cancelled or unsupported — fall through to clipboard
-      }
-    }
+    if (busy) return;
+    setBusy(true);
     try {
-      await navigator.clipboard.writeText(text);
-      toast.success("已複製戰績卡，貼上 WhatsApp 分享");
+      const blob = await renderBettingCardPng(card);
+      const file = new File([blob], `${card.name}-戰績卡.png`, {
+        type: "image/png",
+      });
+
+      // Native share sheet with the image file (WhatsApp / IG on mobile).
+      const nav = navigator as Navigator & {
+        canShare?: (data: { files: File[] }) => boolean;
+      };
+      if (nav.canShare?.({ files: [file] }) && navigator.share) {
+        try {
+          await navigator.share({ files: [file], title: `${card.name} 戰績卡` });
+          return;
+        } catch {
+          return; // user cancelled the share sheet
+        }
+      }
+
+      // Fallback: download the PNG.
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = file.name;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+      toast.success("已儲存戰績卡圖片，可分享到 WhatsApp");
     } catch {
-      toast.error("分享失敗，請手動截圖");
+      toast.error("產生圖片失敗，請手動截圖");
+    } finally {
+      setBusy(false);
     }
   };
 
@@ -137,9 +135,10 @@ export default function BettingCard({ card }: { card: CardData }) {
       <button
         type="button"
         onClick={share}
-        className="w-full bg-brand-600 py-3 text-sm font-semibold text-white transition-colors hover:bg-brand-700"
+        disabled={busy}
+        className="w-full bg-brand-600 py-3 text-sm font-semibold text-white transition-colors hover:bg-brand-700 disabled:opacity-60"
       >
-        📤 分享戰績卡
+        {busy ? "產生圖片中…" : "📤 分享戰績卡"}
       </button>
     </div>
   );
