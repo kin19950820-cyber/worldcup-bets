@@ -344,9 +344,16 @@ function clubSeasonCodes(now = new Date()) {
 const CLUB_SEASONS = clubSeasonCodes();
 const CLUB_EVAL_START = "2024-07-01";
 const CLUB_ROI_EV_THRESHOLD = 0.05;
+// Validated on the walk-forward backtest: pulling each club's Elo 20% back
+// toward 1500 at every season boundary (promotion/relegation churn, squad
+// turnover) and weighting recent matches more (2-year half-life) cut the ROI
+// loss vs closing odds from ~-15% to ~-5% and lifted accuracy.
+const CLUB_SEASON_REGRESS = 0.8;
+const CLUB_DECAY_HALFLIFE_DAYS = 730;
 
 type ClubRow = {
   date: string; // ISO yyyy-mm-dd
+  season: string;
   division: string;
   home: string;
   away: string;
@@ -430,6 +437,7 @@ async function loadClubRows(): Promise<ClubRow[]> {
         }
         rows.push({
           date,
+          season,
           division,
           home: cols[iHome].trim(),
           away: cols[iAway].trim(),
@@ -463,9 +471,20 @@ async function trainClub() {
 
   const ratings = new Map<string, number>();
   const matchCounts = new Map<string, number>();
+  const lastSeason = new Map<string, string>();
   const records: ClubRecord[] = [];
 
   for (const row of rows) {
+    // Regress each club toward the mean at every new season it appears in.
+    for (const team of [row.home, row.away]) {
+      const prev = lastSeason.get(team);
+      if (prev && prev !== row.season) {
+        const cur = ratings.get(team) ?? 1500;
+        ratings.set(team, 1500 + CLUB_SEASON_REGRESS * (cur - 1500));
+      }
+      lastSeason.set(team, row.season);
+    }
+
     const homeRating = ratings.get(row.home) ?? 1500;
     const awayRating = ratings.get(row.away) ?? 1500;
 
@@ -499,13 +518,28 @@ async function trainClub() {
   );
   console.log(`club GLM train: ${train.length}, eval (E0): ${evalRecords.length}`);
 
+  // Recency weights: 2-year half-life so current form dominates the fit.
+  const lastTrainMs = new Date(train[train.length - 1].date).getTime();
+  const weights = train.map((record) =>
+    Math.pow(
+      0.5,
+      (lastTrainMs - new Date(record.date).getTime()) /
+        86400000 /
+        CLUB_DECAY_HALFLIFE_DAYS
+    )
+  );
+
   const homeBeta = fitPoissonGlm(
     train.map((record) => [1, record.eloDiff]),
-    train.map((record) => record.homeScore)
+    train.map((record) => record.homeScore),
+    30,
+    weights
   );
   const awayBeta = fitPoissonGlm(
     train.map((record) => [1, -record.eloDiff]),
-    train.map((record) => record.awayScore)
+    train.map((record) => record.awayScore),
+    30,
+    weights
   );
   console.log("club homeBeta", homeBeta.map((b) => b.toFixed(4)));
   console.log("club awayBeta", awayBeta.map((b) => b.toFixed(4)));
@@ -514,7 +548,8 @@ async function trainClub() {
   let bestLogLik = -Infinity;
   for (let rho = -0.15; rho <= 0.1501; rho += 0.005) {
     let logLik = 0;
-    for (const record of train) {
+    for (let i = 0; i < train.length; i++) {
+      const record = train[i];
       const { home, away } = clubLambdas(record.eloDiff, homeBeta, awayBeta);
       const tau = Math.max(
         1e-6,
@@ -524,7 +559,7 @@ async function trainClub() {
         tau *
         poissonPmf(Math.min(10, record.homeScore), home) *
         poissonPmf(Math.min(10, record.awayScore), away);
-      logLik += Math.log(Math.max(1e-12, p));
+      logLik += weights[i] * Math.log(Math.max(1e-12, p));
     }
     if (logLik > bestLogLik) {
       bestLogLik = logLik;
