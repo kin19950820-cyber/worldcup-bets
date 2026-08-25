@@ -64,6 +64,37 @@ function clampedLambda(eta: number) {
   return Math.exp(Math.min(1.8, Math.max(-2.5, eta)));
 }
 
+// Confidence reflects how DECISIVE this particular prediction is — not how much
+// history the teams have (every established club has plenty, which used to make
+// everything "high"). It combines the leading outcome probability, its margin
+// over the second outcome, and Elo/Dixon-Coles agreement, with a data floor so
+// thin samples can never read "high".
+function ratePrediction(
+  probabilities: { home: number; draw: number; away: number },
+  modelAgreement: number,
+  minMatches: number
+): "high" | "medium" | "low" {
+  const sorted = [
+    probabilities.home,
+    probabilities.draw,
+    probabilities.away,
+  ].sort((a, b) => b - a);
+  const top = sorted[0];
+  const margin = sorted[0] - sorted[1];
+
+  const dataHigh = minMatches >= 150;
+  const dataSome = minMatches >= 50;
+
+  // Football favourites rarely exceed ~0.65; a 0.55 top with a clear margin is
+  // already a strong, one-sided call.
+  const decisive = top >= 0.55 && margin >= 0.15 && modelAgreement >= 0.85;
+  const leaning = top >= 0.45 && margin >= 0.08 && modelAgreement >= 0.75;
+
+  if (decisive && dataHigh) return "high";
+  if ((decisive || leaning) && dataSome) return "medium";
+  return "low";
+}
+
 export function getModelMeta() {
   return {
     trainedAt: ratingsData.trainedAt,
@@ -120,8 +151,7 @@ function analyzeClubFixture(
   );
 
   const minMatches = Math.min(home.matches, away.matches);
-  const confidence =
-    minMatches >= 200 ? "high" : minMatches >= 80 ? "medium" : "low";
+  const confidence = ratePrediction(probabilities, modelAgreement, minMatches);
 
   return {
     modelScope: "club",
@@ -197,8 +227,7 @@ export function analyzeFixture(
   );
 
   const minMatches = Math.min(home.matches, away.matches);
-  const confidence =
-    minMatches >= 300 ? "high" : minMatches >= 100 ? "medium" : "low";
+  const confidence = ratePrediction(probabilities, modelAgreement, minMatches);
 
   return {
     modelScope: "international",

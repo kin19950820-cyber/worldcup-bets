@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { getUpcomingMatches } from "@/lib/actions/matches";
 import { getBetOptionsForMatches } from "@/lib/actions/odds";
+import { getModelScorecard } from "@/lib/actions/quant";
 import { analyzeFixture, getModelMeta } from "@/lib/quant/model";
 import {
   evaluateOptions,
@@ -43,7 +44,10 @@ export default async function QuantPage() {
   const fixtures = (matches as Match[]).filter(
     (match) => match.stage !== "特別項目"
   );
-  const optionsByMatchId = await getBetOptionsForMatches(fixtures);
+  const [optionsByMatchId, scorecard] = await Promise.all([
+    getBetOptionsForMatches(fixtures),
+    getModelScorecard(),
+  ]);
   const meta = getModelMeta();
 
   const allBoards = fixtures.map((match) => {
@@ -142,9 +146,39 @@ export default async function QuantPage() {
             />
           </div>
         </div>
+
+        {/* Live reassessment against this season's actual results */}
+        {scorecard.total > 0 && (
+          <div className="border-t border-slate-800 pt-3">
+            <div className="mb-2 flex items-center justify-between">
+              <h3 className="text-xs font-semibold text-slate-400">
+                本季實測（對真實賽果）
+              </h3>
+              <span className="text-[11px] text-slate-600">
+                {scorecard.total} 場已完場
+              </span>
+            </div>
+            <div className="grid grid-cols-2 gap-2 text-xs sm:grid-cols-3">
+              <MetaTile
+                label="命中率（最可能賽果）"
+                value={`${percent(scorecard.accuracy)}（${scorecard.hits}/${scorecard.total}）`}
+                good={scorecard.hits > scorecard.baselineHits}
+              />
+              <MetaTile
+                label="實測 Brier"
+                value={scorecard.brier.toFixed(3)}
+              />
+              <MetaTile
+                label="對比「主場必勝」"
+                value={`${percent(scorecard.baselineHits / scorecard.total)}（${scorecard.baselineHits}/${scorecard.total}）`}
+              />
+            </div>
+          </div>
+        )}
+
         <p className="text-[11px] leading-relaxed text-slate-600">
-          本季（英超）以球會模型為主。回測為 {meta.backtest.evalStart} 起的走前（walk-forward）驗證，全部樣本外。模型機率為獨立統計估算，並非複製馬會賠率。英超模型附有對
-          Bet365 收盤賠率的真實 ROI 回測——結果為負，即模型未能穩定跑贏市場收盤價；因此英超的價值標記與建議注碼只作參考，切勿當成必勝提示。
+          本季（英超）以球會模型為主。「信心」代表此場預測有幾一面倒（主導機率、與次選差距、Elo/泊松一致度），並非模型必中——所以大部分均衡賽事只會顯示中／低。回測為 {meta.backtest.evalStart} 起的走前（walk-forward）驗證，全部樣本外；「本季實測」則以真實賽果即時檢視模型表現。英超模型對
+          Bet365 收盤賠率的 ROI 回測為負，即未能穩定跑贏市場，價值標記與建議注碼只作參考，切勿當成必勝提示。
         </p>
       </div>
 
