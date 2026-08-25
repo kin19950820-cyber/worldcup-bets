@@ -218,13 +218,19 @@ function solveLinearSystem(a: number[][], b: number[]): number[] | null {
 export function fitPoissonGlm(
   design: number[][],
   counts: number[],
-  iterations = 25
+  iterations = 25,
+  weights?: number[]
 ): number[] {
   const p = design[0].length;
   let beta = new Array(p).fill(0);
-  beta[0] = Math.log(
-    Math.max(1e-6, counts.reduce((s, y) => s + y, 0) / counts.length)
-  );
+  const w = (i: number) => (weights ? weights[i] : 1);
+  let wsum = 0;
+  let wysum = 0;
+  for (let i = 0; i < counts.length; i++) {
+    wsum += w(i);
+    wysum += w(i) * counts[i];
+  }
+  beta[0] = Math.log(Math.max(1e-6, wysum / Math.max(1e-9, wsum)));
 
   for (let iter = 0; iter < iterations; iter++) {
     const gradient = new Array(p).fill(0);
@@ -234,13 +240,14 @@ export function fitPoissonGlm(
 
     for (let i = 0; i < design.length; i++) {
       const x = design[i];
+      const wi = w(i);
       let eta = 0;
       for (let j = 0; j < p; j++) eta += beta[j] * x[j];
       const mu = Math.exp(Math.min(3.5, eta));
       const residual = counts[i] - mu;
       for (let j = 0; j < p; j++) {
-        gradient[j] += residual * x[j];
-        for (let k = 0; k < p; k++) hessian[j][k] += mu * x[j] * x[k];
+        gradient[j] += wi * residual * x[j];
+        for (let k = 0; k < p; k++) hessian[j][k] += wi * mu * x[j] * x[k];
       }
     }
 
