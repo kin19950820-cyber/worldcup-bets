@@ -16,15 +16,18 @@ import { SEASON2_STARTING_BALANCE } from "@/lib/season2-loans";
 import { getMyGroups } from "@/lib/actions/groups";
 import FundTrendChart from "@/components/dashboard/FundTrendChart";
 import GroupCard from "@/components/dashboard/GroupCard";
+import BettingCard from "@/components/dashboard/BettingCard";
+import { getMyBettingCard } from "@/lib/actions/betting-card";
 import { parseParlay } from "@/lib/parlay";
 
 export const dynamic = "force-dynamic";
 
 export default async function DashboardPage() {
-  const [data, season, myGroups] = await Promise.all([
+  const [data, season, myGroups, bettingCard] = await Promise.all([
     getDashboardData(),
     getSeasonState(),
     getMyGroups(),
+    getMyBettingCard(),
   ]);
   if (!data || !data.profile) redirect("/login");
 
@@ -58,6 +61,10 @@ export default async function DashboardPage() {
           {formatProfitLoss(profit)} 盈虧
         </div>
       </div>
+
+      {bettingCard && bettingCard.totalBets > 0 && (
+        <BettingCard card={bettingCard} />
+      )}
 
       <FundTrendChart points={balance_history} />
 
