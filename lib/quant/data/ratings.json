@@ -1,8 +1,8 @@
 {
-  "trainedAt": "2026-08-25T18:48:10.447Z",
+  "trainedAt": "2026-08-27T00:53:45.221Z",
   "source": "https://raw.githubusercontent.com/martj42/international_results/master/results.csv",
-  "totalMatches": 49520,
-  "lastMatchDate": "2026-07-19",
+  "totalMatches": 49547,
+  "lastMatchDate": "2026-08-26",
   "teams": {
     "Abkhazia": {
       "rating": 1628.5,
@@ -189,8 +189,8 @@
       "matches": 218
     },
     "Cambodia": {
-      "rating": 1077.9,
-      "matches": 295
+      "rating": 1072.7,
+      "matches": 299
     },
     "Cameroon": {
       "rating": 1725.3,
@@ -545,8 +545,8 @@
       "matches": 534
     },
     "Indonesia": {
-      "rating": 1505.8,
-      "matches": 728
+      "rating": 1470.9,
+      "matches": 732
     },
     "Iran": {
       "rating": 1889.5,
@@ -637,8 +637,8 @@
       "matches": 11
     },
     "Laos": {
-      "rating": 939.5,
-      "matches": 224
+      "rating": 918.3,
+      "matches": 228
     },
     "Latvia": {
       "rating": 1346.4,
@@ -693,8 +693,8 @@
       "matches": 644
     },
     "Malaysia": {
-      "rating": 1483.2,
-      "matches": 835
+      "rating": 1442.5,
+      "matches": 841
     },
     "Maldives": {
       "rating": 998.5,
@@ -785,8 +785,8 @@
       "matches": 375
     },
     "Myanmar": {
-      "rating": 1137.2,
-      "matches": 512
+      "rating": 1178,
+      "matches": 517
     },
     "Namibia": {
       "rating": 1424.8,
@@ -905,8 +905,8 @@
       "matches": 714
     },
     "Philippines": {
-      "rating": 1341.5,
-      "matches": 342
+      "rating": 1292,
+      "matches": 346
     },
     "Poland": {
       "rating": 1780.4,
@@ -1069,8 +1069,8 @@
       "matches": 8
     },
     "Singapore": {
-      "rating": 1295.6,
-      "matches": 696
+      "rating": 1333.3,
+      "matches": 702
     },
     "Sint Maarten": {
       "rating": 1290.3,
@@ -1181,16 +1181,16 @@
       "matches": 599
     },
     "Thailand": {
-      "rating": 1535.6,
-      "matches": 865
+      "rating": 1527.8,
+      "matches": 873
     },
     "Tibet": {
       "rating": 1278.9,
       "matches": 21
     },
     "Timor-Leste": {
-      "rating": 905.4,
-      "matches": 86
+      "rating": 889.7,
+      "matches": 90
     },
     "Togo": {
       "rating": 1503.4,
@@ -1277,8 +1277,8 @@
       "matches": 195
     },
     "Vietnam": {
-      "rating": 1470.2,
-      "matches": 297
+      "rating": 1566.8,
+      "matches": 306
     },
     "Wales": {
       "rating": 1744.7,
