@@ -203,6 +203,19 @@ function normalizedSelection(option: BetOption, title: string) {
   return displaySelectionLabel(option.selection, title) || option.selection;
 }
 
+// Over/under side of a hi-lo selection. The market NAME (入球大細 / 角球大細)
+// contains both 大 and 細, so testing the raw label misclassifies everything as
+// 大. Strip the "大細" market word first; the leftover keeps only the actual
+// pick's 大 or 細.
+function hiLoSide(selection: string): "over" | "under" | null {
+  const stripped = selection.replace(/大細/g, "");
+  const big = stripped.includes("大");
+  const small = stripped.includes("細");
+  if (big && !small) return "over";
+  if (small && !big) return "under";
+  return null;
+}
+
 function optionSide(option: BetOption, match?: Match) {
   const label = option.selection;
   const cleaned = displaySelectionLabel(option.selection, option.bet_type);
@@ -211,8 +224,9 @@ function optionSide(option: BetOption, match?: Match) {
   if (/^(主|主勝|H|Home)(\b|$)/i.test(cleaned)) return "home";
   if (/^(客|客勝|A|Away)(\b|$)/i.test(cleaned)) return "away";
   if (/^(和|和局|D|Draw)(\b|$)/i.test(cleaned) || label.includes("和")) return "draw";
-  if (cleaned.includes("大") || label.includes("大")) return "over";
-  if (cleaned.includes("細") || label.includes("細")) return "under";
+  const side = hiLoSide(label);
+  if (side === "over") return "over";
+  if (side === "under") return "under";
   return "other";
 }
 
@@ -1478,12 +1492,12 @@ function TwoWayLineGrid({
         line,
         left: rowOptions.find((option) =>
           isHiLo
-            ? option.selection.includes("大")
+            ? hiLoSide(option.selection) === "over"
             : optionSide(option, match) === "home"
         ),
         right: rowOptions.find((option) =>
           isHiLo
-            ? option.selection.includes("細")
+            ? hiLoSide(option.selection) === "under"
             : optionSide(option, match) === "away"
         ),
       };
