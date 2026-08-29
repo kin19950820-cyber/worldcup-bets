@@ -53,6 +53,8 @@ function displaySelectionLabel(selection: string, marketTitle: string) {
     .replace(/^半場開出角球讓球[：:\s]*/, "")
     .replace(/^全場讓球[：:\s]*/, "")
     .replace(/^半場讓球[：:\s]*/, "")
+    .replace(/^全場入球大細[：:\s]*/, "")
+    .replace(/^半場入球大細[：:\s]*/, "")
     .replace(/^首名入球[：:\s]*/, "")
     .replace(/^首隊入球[：:\s]*/, "")
     .replace(/^主客和[：:\s]*/, "")
