@@ -6,10 +6,10 @@ const CLOSED_MATCH_STATUSES = new Set([
   "AWARDED",
 ]);
 
-// Betting closes this many minutes BEFORE kickoff. A match is not bettable once
-// now >= kickoff - cutoff. (Previously betting stayed open until 3h AFTER
-// kickoff, which allowed bets on matches already in progress.)
-export const BETTING_CUTOFF_MINUTES = 5;
+// Betting stays open until this many minutes AFTER kickoff, so players can
+// still bet in the opening exchanges of a match. A match is no longer bettable
+// once now >= kickoff + this offset.
+export const BETTING_CLOSE_AFTER_KICKOFF_MINUTES = 30;
 
 // Standard error surfaced when a match is no longer bettable.
 export const BETTING_CLOSED_MESSAGE = "此賽事已停止接受投注";
@@ -18,10 +18,10 @@ export function isMatchClosed(status: string | null | undefined) {
   return CLOSED_MATCH_STATUSES.has(status ?? "");
 }
 
-// The instant betting closes for a match (kickoff minus the cutoff).
+// The instant betting closes for a match (kickoff plus the grace window).
 export function bettingClosesAt(kickoffTime: string | Date): Date {
   const closesAt = new Date(kickoffTime);
-  closesAt.setMinutes(closesAt.getMinutes() - BETTING_CUTOFF_MINUTES);
+  closesAt.setMinutes(closesAt.getMinutes() + BETTING_CLOSE_AFTER_KICKOFF_MINUTES);
   return closesAt;
 }
 
