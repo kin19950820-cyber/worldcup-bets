@@ -175,41 +175,48 @@ describe("bet restrictions while indebted", () => {
 });
 
 // --------------------------------------------------------------------------
-// Betting cutoff — closes 5 minutes before kickoff
+// Betting cutoff — closes 30 minutes after kickoff
 // --------------------------------------------------------------------------
-describe("betting cutoff (kickoff - 5 min)", () => {
+describe("betting cutoff (kickoff + 30 min)", () => {
   const kickoff = "2026-08-15T14:00:00Z";
 
-  it("more than 5 minutes before kickoff => bettable", () => {
-    const now = new Date("2026-08-15T13:54:00Z"); // 6 min before
+  it("before kickoff => bettable", () => {
+    const now = new Date("2026-08-15T13:54:00Z");
     expect(isMatchBettable({ status: "TIMED", kickoff_time: kickoff }, now)).toBe(
       true
     );
   });
 
-  it("exactly 5 minutes before kickoff => blocked", () => {
-    const now = new Date("2026-08-15T13:55:00Z"); // == cutoff
-    expect(isMatchBettable({ status: "TIMED", kickoff_time: kickoff }, now)).toBe(
+  it("shortly after kickoff (within 30 min) => still bettable", () => {
+    const now = new Date("2026-08-15T14:20:00Z"); // 20 min in
+    expect(isMatchBettable({ status: "IN_PLAY", kickoff_time: kickoff }, now)).toBe(
+      true
+    );
+  });
+
+  it("exactly 30 minutes after kickoff => blocked", () => {
+    const now = new Date("2026-08-15T14:30:00Z"); // == cutoff
+    expect(isMatchBettable({ status: "IN_PLAY", kickoff_time: kickoff }, now)).toBe(
       false
     );
   });
 
-  it("after kickoff => blocked", () => {
-    const now = new Date("2026-08-15T14:30:00Z");
-    expect(isMatchBettable({ status: "TIMED", kickoff_time: kickoff }, now)).toBe(
+  it("well after the window => blocked", () => {
+    const now = new Date("2026-08-15T15:00:00Z");
+    expect(isMatchBettable({ status: "IN_PLAY", kickoff_time: kickoff }, now)).toBe(
       false
     );
   });
 
   it("finished match => blocked regardless of time", () => {
-    const now = new Date("2026-08-15T13:00:00Z");
+    const now = new Date("2026-08-15T14:10:00Z");
     expect(
       isMatchBettable({ status: "FINISHED", kickoff_time: kickoff }, now)
     ).toBe(false);
   });
 
-  it("cutoff instant is exactly 5 minutes before kickoff", () => {
-    expect(bettingClosesAt(kickoff).toISOString()).toBe("2026-08-15T13:55:00.000Z");
+  it("cutoff instant is exactly 30 minutes after kickoff", () => {
+    expect(bettingClosesAt(kickoff).toISOString()).toBe("2026-08-15T14:30:00.000Z");
   });
 });
 
