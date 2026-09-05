@@ -175,9 +175,9 @@ describe("bet restrictions while indebted", () => {
 });
 
 // --------------------------------------------------------------------------
-// Betting cutoff — closes 30 minutes after kickoff
+// Betting cutoff — closes 45 minutes after kickoff (end of first half)
 // --------------------------------------------------------------------------
-describe("betting cutoff (kickoff + 30 min)", () => {
+describe("betting cutoff (kickoff + 45 min)", () => {
   const kickoff = "2026-08-15T14:00:00Z";
 
   it("before kickoff => bettable", () => {
@@ -187,22 +187,22 @@ describe("betting cutoff (kickoff + 30 min)", () => {
     );
   });
 
-  it("shortly after kickoff (within 30 min) => still bettable", () => {
-    const now = new Date("2026-08-15T14:20:00Z"); // 20 min in
+  it("during the first half (within 45 min) => still bettable", () => {
+    const now = new Date("2026-08-15T14:40:00Z"); // 40 min in
     expect(isMatchBettable({ status: "IN_PLAY", kickoff_time: kickoff }, now)).toBe(
       true
     );
   });
 
-  it("exactly 30 minutes after kickoff => blocked", () => {
-    const now = new Date("2026-08-15T14:30:00Z"); // == cutoff
+  it("exactly 45 minutes after kickoff => blocked", () => {
+    const now = new Date("2026-08-15T14:45:00Z"); // == cutoff
     expect(isMatchBettable({ status: "IN_PLAY", kickoff_time: kickoff }, now)).toBe(
       false
     );
   });
 
-  it("well after the window => blocked", () => {
-    const now = new Date("2026-08-15T15:00:00Z");
+  it("second half => blocked", () => {
+    const now = new Date("2026-08-15T15:10:00Z");
     expect(isMatchBettable({ status: "IN_PLAY", kickoff_time: kickoff }, now)).toBe(
       false
     );
@@ -215,8 +215,8 @@ describe("betting cutoff (kickoff + 30 min)", () => {
     ).toBe(false);
   });
 
-  it("cutoff instant is exactly 30 minutes after kickoff", () => {
-    expect(bettingClosesAt(kickoff).toISOString()).toBe("2026-08-15T14:30:00.000Z");
+  it("cutoff instant is exactly 45 minutes after kickoff", () => {
+    expect(bettingClosesAt(kickoff).toISOString()).toBe("2026-08-15T14:45:00.000Z");
   });
 });
 

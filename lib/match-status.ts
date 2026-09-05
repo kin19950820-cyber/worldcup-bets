@@ -6,10 +6,10 @@ const CLOSED_MATCH_STATUSES = new Set([
   "AWARDED",
 ]);
 
-// Betting stays open until this many minutes AFTER kickoff, so players can
-// still bet in the opening exchanges of a match. A match is no longer bettable
-// once now >= kickoff + this offset.
-export const BETTING_CLOSE_AFTER_KICKOFF_MINUTES = 30;
+// In-play (走場) betting stays open until this many minutes AFTER kickoff —
+// through the end of the first half. A match is no longer bettable once
+// now >= kickoff + this offset.
+export const BETTING_CLOSE_AFTER_KICKOFF_MINUTES = 45;
 
 // Standard error surfaced when a match is no longer bettable.
 export const BETTING_CLOSED_MESSAGE = "此賽事已停止接受投注";
