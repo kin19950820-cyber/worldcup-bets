@@ -16,6 +16,9 @@ const FUND_TREND_TRANSACTION_TYPES = [
   "loan_principal",
   "debt_repayment",
   "admin_adjustment",
+  // Stake deductions must be plotted too; otherwise losing bets (which record
+  // no payout) never lower the trend and it drifts above the real balance.
+  "stake_deduct",
 ];
 
 export async function getDashboardData() {
@@ -130,6 +133,18 @@ export async function getDashboardData() {
       };
     }),
   ];
+
+  // End the trend on the authoritative current net worth (cash + pending −
+  // debt) so the chart's latest value matches the balance shown above it.
+  const currentCash = Number(
+    seasonPlayer?.current_balance ?? profile?.current_balance ?? startingBalance
+  );
+  balance_history.push({
+    balance: currentCash,
+    net_balance: Math.round((currentCash + pending_stake - currentDebt) * 100) / 100,
+    outstanding_loan: currentDebt,
+    created_at: new Date().toISOString(),
+  });
 
   return {
     profile,
