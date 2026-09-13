@@ -18,6 +18,9 @@ const FUND_TREND_TRANSACTION_TYPES = [
   "loan_principal",
   "debt_repayment",
   "admin_adjustment",
+  // Stake deductions must be plotted too; otherwise losing bets (which record
+  // no payout) never lower the trend and it drifts above the real balance.
+  "stake_deduct",
 ];
 
 export async function getLeaderboard(): Promise<{ entries: LeaderboardEntry[] }> {
@@ -190,6 +193,14 @@ export async function getLeaderboard(): Promise<{ entries: LeaderboardEntry[] }>
       .filter((bet) => bet.status === "pending")
       .reduce((sum, bet) => sum + bet.stake, 0);
     const netBalance = currentBalance + pendingStake - totalBorrowed;
+    // End the trend on the authoritative current net worth (cash + pending −
+    // debt) so the chart's latest value matches the leaderboard row exactly.
+    balanceHistory.push({
+      balance: currentBalance,
+      net_balance: netBalance,
+      outstanding_loan: totalBorrowed,
+      created_at: new Date().toISOString(),
+    });
     const won = userBets.filter((b) => classifyBetOutcome(b) === "won");
     const halfWon = userBets.filter((b) => classifyBetOutcome(b) === "half_won");
     const lost = userBets.filter((b) => classifyBetOutcome(b) === "lost");
