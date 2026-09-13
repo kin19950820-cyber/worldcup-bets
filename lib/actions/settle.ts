@@ -38,53 +38,146 @@ function transactionTypeForSettlement(
   return result === "void" || result === "half_lost" ? "refund" : "payout";
 }
 
+const round2 = (n: number) => Math.round(n * 100) / 100;
+
+// Credits a settlement delta to the player's AUTHORITATIVE season balance
+// (season_players.current_balance), mirroring it to profiles and tagging the
+// transaction with the season — matching settle_bet_season2. A positive payout
+// repays outstanding debt first, remainder becomes cash. Used by parlay
+// leg-settlement and re-settlement, which previously only touched the profiles
+// mirror and so never reached the real balance the leaderboard reads.
 async function applySettlementBalanceDelta({
   service,
   userId,
   betId,
-  currentBalance,
+  seasonId,
   delta,
   result,
 }: {
   service: ReturnType<typeof createServiceClient>;
   userId: string;
   betId: string;
-  currentBalance: number;
+  seasonId: number | null | undefined;
   delta: number;
   result: SettlementResult;
 }) {
-  const roundedDelta = Math.round(delta * 100) / 100;
-  const newBalance = Math.round((currentBalance + roundedDelta) * 100) / 100;
+  const roundedDelta = round2(delta);
 
-  if (roundedDelta === 0) return { newBalance };
+  const { data: sp } = seasonId
+    ? await service
+        .from("season_players")
+        .select("current_balance, outstanding_debt")
+        .eq("user_id", userId)
+        .eq("season_id", seasonId)
+        .maybeSingle()
+    : { data: null };
 
-  const { data: updatedProfile, error: profileError } = await service
-    .from("profiles")
-    .update({ current_balance: newBalance })
-    .eq("id", userId)
-    .eq("current_balance", currentBalance)
+  // Legacy fallback: no season row (Season 1) — update the profiles mirror.
+  if (!sp || seasonId == null) {
+    const { data: profile } = await service
+      .from("profiles")
+      .select("current_balance")
+      .eq("id", userId)
+      .single();
+    const base = Number(profile?.current_balance ?? 0);
+    const newBalance = round2(base + roundedDelta);
+    if (roundedDelta === 0) return { newBalance };
+    const { data: updated, error: profileError } = await service
+      .from("profiles")
+      .update({ current_balance: newBalance })
+      .eq("id", userId)
+      .eq("current_balance", base)
+      .select("current_balance")
+      .single();
+    if (profileError || !updated) {
+      return { error: profileError?.message ?? "玩家餘額剛被更新，請重試" };
+    }
+    const { error: txError } = await service.from("transactions").insert({
+      user_id: userId,
+      bet_id: betId,
+      type: transactionTypeForSettlement(result, roundedDelta),
+      amount: roundedDelta,
+      balance_after: newBalance,
+    });
+    if (txError) {
+      await service
+        .from("profiles")
+        .update({ current_balance: base })
+        .eq("id", userId)
+        .eq("current_balance", newBalance);
+      return { error: txError.message };
+    }
+    return { newBalance };
+  }
+
+  const oldBalance = Number(sp.current_balance);
+  const oldDebt = Number(sp.outstanding_debt);
+  if (roundedDelta === 0) return { newBalance: oldBalance };
+
+  // Debt-first repayment for positive payouts (matches settle_bet_season2).
+  const repaid =
+    roundedDelta > 0 ? round2(Math.min(roundedDelta, oldDebt)) : 0;
+  const cash = round2(roundedDelta - repaid);
+  const newDebt = round2(oldDebt - repaid);
+  const newBalance = round2(oldBalance + cash);
+
+  const { data: updatedSp, error: spError } = await service
+    .from("season_players")
+    .update({
+      current_balance: newBalance,
+      outstanding_debt: newDebt,
+      updated_at: new Date().toISOString(),
+    })
+    .eq("user_id", userId)
+    .eq("season_id", seasonId)
+    .eq("current_balance", oldBalance)
     .select("current_balance")
     .single();
 
-  if (profileError || !updatedProfile) {
-    return { error: profileError?.message ?? "玩家餘額剛被更新，請重試" };
+  if (spError || !updatedSp) {
+    return { error: spError?.message ?? "玩家餘額剛被更新，請重試" };
   }
+  await service
+    .from("profiles")
+    .update({ current_balance: newBalance })
+    .eq("id", userId);
 
-  const { error: transactionError } = await service.from("transactions").insert({
-    user_id: userId,
-    bet_id: betId,
-    type: transactionTypeForSettlement(result, roundedDelta),
-    amount: roundedDelta,
-    balance_after: newBalance,
-  });
-
-  if (transactionError) {
+  const rollback = async () => {
+    await service
+      .from("season_players")
+      .update({ current_balance: oldBalance, outstanding_debt: oldDebt })
+      .eq("user_id", userId)
+      .eq("season_id", seasonId)
+      .eq("current_balance", newBalance);
     await service
       .from("profiles")
-      .update({ current_balance: currentBalance })
-      .eq("id", userId)
-      .eq("current_balance", newBalance);
-    return { error: transactionError.message };
+      .update({ current_balance: oldBalance })
+      .eq("id", userId);
+  };
+
+  if (cash !== 0) {
+    const { error: txError } = await service.from("transactions").insert({
+      user_id: userId,
+      bet_id: betId,
+      season_id: seasonId,
+      type: transactionTypeForSettlement(result, cash),
+      amount: cash,
+      balance_after: newBalance,
+    });
+    if (txError) {
+      await rollback();
+      return { error: txError.message };
+    }
+  }
+  if (repaid !== 0) {
+    await service.from("transactions").insert({
+      user_id: userId,
+      bet_id: betId,
+      season_id: seasonId,
+      type: "debt_repayment",
+      amount: round2(-repaid),
+      balance_after: newBalance,
+    });
   }
 
   return { newBalance };
@@ -140,7 +233,7 @@ export async function settleBet(
       service,
       userId: existingBet.user_id,
       betId,
-      currentBalance: profile.current_balance,
+      seasonId: existingBet.season_id,
       delta,
       result,
     });
@@ -332,7 +425,7 @@ export async function settleParlayLeg(
       service,
       userId: bet.user_id,
       betId,
-      currentBalance: profile.current_balance,
+      seasonId: bet.season_id,
       delta: settlement.payout - previousPayout,
       result: settlement.status === "pending" ? result : settlement.status,
     });
