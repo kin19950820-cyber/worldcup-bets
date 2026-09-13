@@ -79,7 +79,7 @@ export default function FundTrendChart({
   const low = minNetBalance;
 
   return (
-    <div className="card p-5">
+    <div className="card p-4">
       <div className="mb-4 flex items-start justify-between gap-3">
         <div>
           <h2 className="text-sm font-semibold text-slate-300">{title}</h2>
