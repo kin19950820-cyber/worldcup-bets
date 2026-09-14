@@ -32,6 +32,7 @@ type HkjcOddsType =
   | "CHA"
   | "CHH"
   | "CFH"
+  | "CFA"
   | "AGS"
   | "LGS";
 
@@ -128,6 +129,7 @@ const HKJC_ODDS_TYPES: HkjcOddsType[] = [
   "CHA",
   "CHH",
   "CFH",
+  "CFA",
   "OOE",
   "MSP",
   "TQL",
@@ -148,9 +150,9 @@ const ODDS_TYPES_BY_BET_TYPE: Partial<Record<BetOption["bet_type"], HkjcOddsType
   半全場: ["HFT"],
   半場主客和: ["FHA"],
   首名入球: ["FTS"],
-  角球: ["CHL", "FCH", "FHC", "CHD", "CHA", "CHH", "CFH"],
-  全場角球: ["CHL", "FCH", "CHD", "CHA", "CHH"],
-  半場角球: ["FHC", "CFH"],
+  角球: ["CHL", "FCH", "FHC", "CHD", "CHH", "CHA", "CFH", "CFA"],
+  全場角球: ["CHL", "FCH", "CHD", "CHH", "CHA"],
+  半場角球: ["FHC", "CFH", "CFA"],
   球員表現: ["FGS", "AGS", "LGS", "NTS"],
   晉級: ["TQL"],
   冠軍: ["CHP"],
@@ -299,11 +301,12 @@ const BET_TYPE_BY_HKJC_ODDS_TYPE: Record<
   FCH: "全場角球",
   FHC: "半場角球",
   CHD: "全場角球",
-  // Team corner over/under (主客隊角球大細) markets — routed into the corner
-  // section; BetForm's 球隊開出角球大細 sub-group picks them up by name.
-  CHA: "全場角球",
-  CHH: "全場角球",
-  CFH: "半場角球",
+  // Team corner over/under (主客隊角球大細). The team (home/away) is encoded
+  // in the odds-type, not the data, so selectionLabel prefixes 主隊/客隊.
+  CHH: "全場角球", // full · home
+  CHA: "全場角球", // full · away
+  CFH: "半場角球", // first half · home
+  CFA: "半場角球", // first half · away
   OOE: "特別盤",
   MSP: "特別盤",
   TQL: "晉級",
@@ -539,14 +542,14 @@ function localizedSelectionName(
   const normalizedValue = normalizeName(value || selection?.str || "");
 
   if (
-    ["HIL", "FHL", "CHL", "FCH", "FHC", "CHD", "CHA", "CHH", "CFH"].includes(pool.oddsType) &&
+    ["HIL", "FHL", "CHL", "FCH", "FHC", "CHD", "CHA", "CHH", "CFH", "CFA"].includes(pool.oddsType) &&
     (["high", "hi", "over", "h"].includes(normalizedValue) ||
       normalizedValue.includes("大"))
   ) {
     return "大";
   }
   if (
-    ["HIL", "FHL", "CHL", "FCH", "FHC", "CHD", "CHA", "CHH", "CFH"].includes(pool.oddsType) &&
+    ["HIL", "FHL", "CHL", "FCH", "FHC", "CHD", "CHA", "CHH", "CFH", "CFA"].includes(pool.oddsType) &&
     (["low", "lo", "under", "l"].includes(normalizedValue) ||
       normalizedValue.includes("細"))
   ) {
@@ -600,6 +603,24 @@ function hiLoPrefix(pool: HkjcPool) {
   return null;
 }
 
+// Team corner over/under: the team (home/away) and scope (full/half) live in
+// the odds-type code, not the data (selections are only 大/細), so build the
+// market label here. C[H=full|F=half][H=home|A=away].
+function teamCornerHiLoPrefix(pool: HkjcPool) {
+  switch (pool.oddsType) {
+    case "CHH":
+      return "主隊開出角球大細";
+    case "CHA":
+      return "客隊開出角球大細";
+    case "CFH":
+      return "主隊半場開出角球大細";
+    case "CFA":
+      return "客隊半場開出角球大細";
+    default:
+      return null;
+  }
+}
+
 function compactLabel(parts: Array<string | undefined>) {
   return parts
     .map((part) => part?.trim())
@@ -622,6 +643,7 @@ function selectionLabel(
   const propPrefix = playerPropPrefix(pool);
   const hdcPrefix = handicapPrefix(pool);
   const hiLoScope = hiLoPrefix(pool);
+  const teamCorner = teamCornerHiLoPrefix(pool);
   const selectionText =
     selections
       .map((selection) => localizedSelectionName(selection, match, pool))
@@ -650,6 +672,7 @@ function selectionLabel(
     "CHA",
     "CHH",
     "CFH",
+    "CFA",
   ].includes(pool.oddsType);
   const condition = carriesCondition
     ? ["away", "a"].includes(selectedFirstName)
@@ -664,9 +687,13 @@ function selectionLabel(
       ? `${hdcPrefix}讓球：${selectionText}`
       : hiLoScope
       ? `${hiLoScope}入球大細：${selectionText}`
+      : teamCorner
+      ? `${teamCorner}：${selectionText}`
       : selectionText,
     condition,
-    propPrefix || hdcPrefix || hiLoScope ? undefined : pool.name_ch || pool.name_en,
+    propPrefix || hdcPrefix || hiLoScope || teamCorner
+      ? undefined
+      : pool.name_ch || pool.name_en,
   ]);
 }
 
