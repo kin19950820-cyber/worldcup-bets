@@ -29,6 +29,9 @@ type HkjcOddsType =
   | "FHH"
   | "FHC"
   | "CHD"
+  | "CHA"
+  | "CHH"
+  | "CFH"
   | "AGS"
   | "LGS";
 
@@ -122,6 +125,9 @@ const HKJC_ODDS_TYPES: HkjcOddsType[] = [
   "FCH",
   "FHC",
   "CHD",
+  "CHA",
+  "CHH",
+  "CFH",
   "OOE",
   "MSP",
   "TQL",
@@ -142,9 +148,9 @@ const ODDS_TYPES_BY_BET_TYPE: Partial<Record<BetOption["bet_type"], HkjcOddsType
   半全場: ["HFT"],
   半場主客和: ["FHA"],
   首名入球: ["FTS"],
-  角球: ["CHL", "FCH", "FHC", "CHD"],
-  全場角球: ["CHL", "FCH", "CHD"],
-  半場角球: ["FHC"],
+  角球: ["CHL", "FCH", "FHC", "CHD", "CHA", "CHH", "CFH"],
+  全場角球: ["CHL", "FCH", "CHD", "CHA", "CHH"],
+  半場角球: ["FHC", "CFH"],
   球員表現: ["FGS", "AGS", "LGS", "NTS"],
   晉級: ["TQL"],
   冠軍: ["CHP"],
@@ -293,6 +299,11 @@ const BET_TYPE_BY_HKJC_ODDS_TYPE: Record<
   FCH: "全場角球",
   FHC: "半場角球",
   CHD: "全場角球",
+  // Team corner over/under (主客隊角球大細) markets — routed into the corner
+  // section; BetForm's 球隊開出角球大細 sub-group picks them up by name.
+  CHA: "全場角球",
+  CHH: "全場角球",
+  CFH: "半場角球",
   OOE: "特別盤",
   MSP: "特別盤",
   TQL: "晉級",
@@ -528,14 +539,14 @@ function localizedSelectionName(
   const normalizedValue = normalizeName(value || selection?.str || "");
 
   if (
-    ["HIL", "FHL", "CHL", "FCH", "FHC", "CHD"].includes(pool.oddsType) &&
+    ["HIL", "FHL", "CHL", "FCH", "FHC", "CHD", "CHA", "CHH", "CFH"].includes(pool.oddsType) &&
     (["high", "hi", "over", "h"].includes(normalizedValue) ||
       normalizedValue.includes("大"))
   ) {
     return "大";
   }
   if (
-    ["HIL", "FHL", "CHL", "FCH", "FHC", "CHD"].includes(pool.oddsType) &&
+    ["HIL", "FHL", "CHL", "FCH", "FHC", "CHD", "CHA", "CHH", "CFH"].includes(pool.oddsType) &&
     (["low", "lo", "under", "l"].includes(normalizedValue) ||
       normalizedValue.includes("細"))
   ) {
@@ -636,6 +647,9 @@ function selectionLabel(
     "FCH",
     "FHC",
     "CHD",
+    "CHA",
+    "CHH",
+    "CFH",
   ].includes(pool.oddsType);
   const condition = carriesCondition
     ? ["away", "a"].includes(selectedFirstName)
