@@ -136,12 +136,35 @@ function splitCornerGroups(
       options: totalHiLo,
     });
   }
-  if (teamHiLo.length > 0) {
+  // Split team corner over/under into 主隊 / 客隊 so each renders its own
+  // 大/細 grid instead of mixing both teams on one line.
+  const teamHiLoHome = teamHiLo.filter((o) => o.selection.includes("主隊"));
+  const teamHiLoAway = teamHiLo.filter((o) => o.selection.includes("客隊"));
+  const teamHiLoOther = teamHiLo.filter(
+    (o) => !o.selection.includes("主隊") && !o.selection.includes("客隊")
+  );
+  if (teamHiLoHome.length > 0) {
+    groups.push({
+      key: `${type}:team-hilo-home`,
+      type,
+      title: teamTotalTitle.replace("球隊", "主隊"),
+      options: teamHiLoHome,
+    });
+  }
+  if (teamHiLoAway.length > 0) {
+    groups.push({
+      key: `${type}:team-hilo-away`,
+      type,
+      title: teamTotalTitle.replace("球隊", "客隊"),
+      options: teamHiLoAway,
+    });
+  }
+  if (teamHiLoOther.length > 0) {
     groups.push({
       key: `${type}:team-hilo`,
       type,
       title: teamTotalTitle,
-      options: teamHiLo,
+      options: teamHiLoOther,
     });
   }
   if (handicap.length > 0) {
