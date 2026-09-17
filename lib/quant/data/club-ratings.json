@@ -1,8 +1,8 @@
 {
-  "trainedAt": "2026-09-14T23:54:29.388Z",
+  "trainedAt": "2026-09-17T23:35:21.346Z",
   "source": "https://www.football-data.co.uk",
-  "totalMatches": 15033,
-  "lastMatchDate": "2026-09-14",
+  "totalMatches": 15035,
+  "lastMatchDate": "2026-09-15",
   "teams": {
     "Arsenal": {
       "rating": 1766.2,
@@ -45,8 +45,8 @@
       "matches": 622
     },
     "Bristol City": {
-      "rating": 1457.9,
-      "matches": 650
+      "rating": 1446.6,
+      "matches": 651
     },
     "Burnley": {
       "rating": 1411.3,
@@ -113,8 +113,8 @@
       "matches": 656
     },
     "Lincoln": {
-      "rating": 1485.2,
-      "matches": 6
+      "rating": 1496.4,
+      "matches": 7
     },
     "Liverpool": {
       "rating": 1637.6,
@@ -133,12 +133,12 @@
       "matches": 612
     },
     "Middlesbrough": {
-      "rating": 1540.5,
-      "matches": 734
+      "rating": 1537.8,
+      "matches": 735
     },
     "Millwall": {
-      "rating": 1511.5,
-      "matches": 650
+      "rating": 1514.2,
+      "matches": 651
     },
     "Milton Keynes Dons": {
       "rating": 1346.2,
