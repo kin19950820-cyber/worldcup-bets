@@ -1,5 +1,5 @@
 {
-  "trainedAt": "2026-10-08T01:06:01.126Z",
+  "trainedAt": "2026-10-11T00:16:30.710Z",
   "source": "https://raw.githubusercontent.com/martj42/international_results/master/results.csv",
   "totalMatches": 49945,
   "lastMatchDate": "2026-10-06",
@@ -145,7 +145,7 @@
       "matches": 3
     },
     "Bolivia": {
-      "rating": 1709.8,
+      "rating": 1706.2,
       "matches": 537
     },
     "Bonaire": {
@@ -261,7 +261,7 @@
       "matches": 1
     },
     "Colombia": {
-      "rating": 2076,
+      "rating": 2076.1,
       "matches": 646
     },
     "Comoros": {
@@ -893,7 +893,7 @@
       "matches": 159
     },
     "Paraguay": {
-      "rating": 1925.4,
+      "rating": 1929.1,
       "matches": 791
     },
     "Parishes of Jersey": {
