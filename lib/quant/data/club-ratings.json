@@ -1,8 +1,8 @@
 {
-  "trainedAt": "2026-10-20T23:58:40.773Z",
+  "trainedAt": "2026-10-22T00:03:06.585Z",
   "source": "https://www.football-data.co.uk",
-  "totalMatches": 15113,
-  "lastMatchDate": "2026-10-19",
+  "totalMatches": 15114,
+  "lastMatchDate": "2026-10-20",
   "teams": {
     "Arsenal": {
       "rating": 1755.7,
@@ -169,8 +169,8 @@
       "matches": 92
     },
     "Portsmouth": {
-      "rating": 1449.1,
-      "matches": 194
+      "rating": 1451.3,
+      "matches": 195
     },
     "Preston": {
       "rating": 1337.5,
@@ -237,8 +237,8 @@
       "matches": 390
     },
     "Wolves": {
-      "rating": 1457.2,
-      "matches": 620
+      "rating": 1455,
+      "matches": 621
     },
     "Wrexham": {
       "rating": 1485.7,
