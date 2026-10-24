@@ -16,7 +16,7 @@ type Props = {
 };
 
 const CONFIRM_MESSAGE =
-  "你將買入 $500，並產生 $500 欠款（免手續費）。贏取的派彩會優先用作還款。買入次數無限。";
+  "你將即時買入 $500，並產生 $500 欠款（免手續費，無需審批）。贏取的派彩會優先用作還款。買入次數無限。";
 
 export default function Season2LoanCard({
   currentBalance,
@@ -37,7 +37,15 @@ export default function Season2LoanCard({
         toast.error(result.error);
         return;
       }
-      toast.success("已提交買入申請，待管理員批核");
+      const balance =
+        "newBalance" in result && typeof result.newBalance === "number"
+          ? result.newBalance
+          : null;
+      toast.success(
+        balance != null
+          ? `已買入 $${SEASON2_LOAN.amount}，餘額 ${formatCurrency(balance)}`
+          : `已買入 $${SEASON2_LOAN.amount}`
+      );
       window.location.reload();
     });
   };
@@ -75,7 +83,7 @@ export default function Season2LoanCard({
         className="w-full rounded-xl bg-orange-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-orange-700 disabled:cursor-not-allowed disabled:opacity-50"
       >
         {pending
-          ? "申請中…"
+          ? "買入中…"
           : eligible
           ? `買入 $${SEASON2_LOAN.amount}（欠 $${SEASON2_LOAN.debt}）`
           : reason ?? "暫不符合買入資格"}

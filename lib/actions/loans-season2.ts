@@ -26,9 +26,9 @@ function mapRpcError(message: string | undefined): string {
   return message;
 }
 
-// Player requests a $500 loan for the active season. The RPC re-checks
-// eligibility under a row lock; the unique pending-request index prevents
-// duplicate concurrent requests.
+// Player buys in $500 for the active season. The buy-in applies immediately —
+// no admin approval. The RPC re-checks eligibility under a row lock, then
+// credits cash + debt and records the ledger entry atomically.
 export async function requestSeason2Loan() {
   const supabase = await createClient();
   const service = createServiceClient();
@@ -56,11 +56,15 @@ export async function requestSeason2Loan() {
     if (!check.allowed) return { error: check.reason };
   }
 
-  const { error } = await service.rpc("request_loan", { p_user_id: user.id });
+  const { data, error } = await service.rpc("take_loan", {
+    p_user_id: user.id,
+  });
   if (error) return { error: mapRpcError(error.message) };
 
   revalidatePath("/dashboard");
-  return { success: true };
+  revalidatePath("/leaderboard");
+  const result = (data ?? {}) as Record<string, unknown>;
+  return { success: true, newBalance: result.new_balance as number | undefined };
 }
 
 export async function approveSeason2Loan(requestId: string) {
