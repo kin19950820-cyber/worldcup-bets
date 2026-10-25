@@ -120,13 +120,13 @@ describe("automatic debt repayment", () => {
 });
 
 // --------------------------------------------------------------------------
-// Bet restrictions while in debt
+// Betting while in debt — no restrictions (no stake cap, parlays allowed)
 // --------------------------------------------------------------------------
-describe("bet restrictions while indebted", () => {
-  it("indebted single bet $100 => allowed", () => {
+describe("betting while indebted is unrestricted", () => {
+  it("indebted large single bet is allowed (no stake cap)", () => {
     expect(
       validateStake({
-        stake: 100,
+        stake: 500,
         currentBalance: 540,
         outstandingDebt: 550,
         isParlay: false,
@@ -134,35 +134,35 @@ describe("bet restrictions while indebted", () => {
     ).toBeNull();
   });
 
-  it("indebted single bet $101 => rejected", () => {
+  it("indebted all-in (stake == balance) is allowed", () => {
     expect(
       validateStake({
-        stake: 101,
+        stake: 540,
         currentBalance: 540,
         outstandingDebt: 550,
         isParlay: false,
       })
-    ).toContain("單注上限");
+    ).toBeNull();
   });
 
-  it("indebted parlay => rejected", () => {
+  it("indebted parlay is allowed", () => {
     expect(
       validateStake({
-        stake: 20,
+        stake: 200,
         currentBalance: 540,
         outstandingDebt: 550,
         isParlay: true,
       })
-    ).toContain("過關");
+    ).toBeNull();
   });
 
-  it("debt-free player has no stake cap and can parlay", () => {
-    const r = betRestrictions(0);
+  it("being in debt imposes no cap and still allows parlay", () => {
+    const r = betRestrictions(550);
     expect(r.maxSingleStake).toBe(Number.POSITIVE_INFINITY);
     expect(r.parlayAllowed).toBe(true);
   });
 
-  it("stake beyond balance is rejected", () => {
+  it("stake beyond balance is still rejected", () => {
     expect(
       validateStake({
         stake: 600,

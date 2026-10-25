@@ -132,7 +132,7 @@ describe("place_single_bet", () => {
     expect(error?.message).toContain("BETTING_CLOSED");
   });
 
-  it("caps single-bet stake at $100 while in debt", async () => {
+  it("allows a large single-bet stake while in debt (no cap)", async () => {
     const user = await fx.user({ balance: 500, debt: 550 });
     const matchId = await fx.match();
 
@@ -145,10 +145,10 @@ describe("place_single_bet", () => {
       p_stake: 101,
     });
 
-    expect(error?.message).toContain("DEBT_STAKE_LIMIT");
+    expect(error).toBeNull();
   });
 
-  it("allows a $100 stake while in debt", async () => {
+  it("allows going all-in while in debt", async () => {
     const user = await fx.user({ balance: 500, debt: 550 });
     const matchId = await fx.match();
 
@@ -158,7 +158,7 @@ describe("place_single_bet", () => {
       p_bet_type: "獨贏",
       p_selection: "Test Home",
       p_odds: 2,
-      p_stake: 100,
+      p_stake: 500,
     });
 
     expect(error).toBeNull();
@@ -252,7 +252,7 @@ describe("place_parlay", () => {
     expect(bet.match_id).toBe(matchA); // primary leg = p_match_ids[1]
   });
 
-  it("blocks parlays while in debt", async () => {
+  it("allows parlays while in debt", async () => {
     const user = await fx.user({ balance: 500, debt: 100 });
     const matchA = await fx.match();
     const matchB = await fx.match();
@@ -265,7 +265,7 @@ describe("place_parlay", () => {
       p_stake: 20,
     });
 
-    expect(error?.message).toContain("DEBT_NO_PARLAY");
+    expect(error).toBeNull();
   });
 
   it("rejects if any leg is past cutoff (rolls back the whole parlay)", async () => {

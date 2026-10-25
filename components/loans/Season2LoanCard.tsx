@@ -72,7 +72,7 @@ export default function Season2LoanCard({
 
       {outstandingDebt > 0 && (
         <p className="rounded-lg bg-orange-500/10 px-3 py-2 text-[11px] text-orange-300">
-          尚有欠款：單注上限 $100、暫停過關，贏取的派彩會自動優先還款。
+          尚有欠款：贏取的派彩會自動優先還款，需全部清還後才可再次買入。
         </p>
       )}
 

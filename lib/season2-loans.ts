@@ -6,7 +6,9 @@
 //   * The full $500 is credited to usable cash.
 //   * Eligible only when: cash <= $100 AND debt == 0 (buy-in count is unlimited).
 //   * Cannot buy in again until the previous buy-in is fully repaid.
-//   * While in debt: max single stake $100, no parlays, no new buy-ins.
+//   * Being in debt no longer limits betting: no stake cap and parlays are
+//     allowed (you may even go all-in). The only block is a new buy-in while
+//     still in debt.
 //   * Winning payouts repay outstanding debt first, remainder becomes cash.
 
 // Season 2 base (starting) balance. Each player begins with this; a buy-in
@@ -18,7 +20,6 @@ export const SEASON2_LOAN = {
   fee: 0,
   debt: 500, // no fee/interest: debt equals the amount bought in
   eligibleBalanceAtMost: 100,
-  indebtedMaxStake: 100,
 } as const;
 
 export function roundMoney(value: number): number {
@@ -99,37 +100,29 @@ export type BetRestrictions = {
   parlayAllowed: boolean;
 };
 
-export function betRestrictions(outstandingDebt: number): BetRestrictions {
-  const inDebt = roundMoney(outstandingDebt) > 0;
+// Debt no longer restricts betting: any stake up to the available balance is
+// allowed (including all-in), and parlays are always permitted. The parameter
+// is kept for call-site compatibility but no longer gates anything.
+export function betRestrictions(_outstandingDebt?: number): BetRestrictions {
   return {
-    maxSingleStake: inDebt
-      ? SEASON2_LOAN.indebtedMaxStake
-      : Number.POSITIVE_INFINITY,
-    parlayAllowed: !inDebt,
+    maxSingleStake: Number.POSITIVE_INFINITY,
+    parlayAllowed: true,
   };
 }
 
-// Validates a proposed stake against balance + debt restrictions. Returns the
-// zh-Hant error to surface, or null when the stake is allowed.
+// Validates a proposed stake against the available balance. Returns the
+// zh-Hant error to surface, or null when the stake is allowed. Being in debt
+// imposes no stake cap and does not block parlays.
 export function validateStake({
   stake,
   currentBalance,
-  outstandingDebt,
-  isParlay,
 }: {
   stake: number;
   currentBalance: number;
-  outstandingDebt: number;
-  isParlay: boolean;
+  outstandingDebt?: number;
+  isParlay?: boolean;
 }): string | null {
   if (!Number.isFinite(stake) || stake <= 0) return "投注額必須大於 0";
-  const restrictions = betRestrictions(outstandingDebt);
-  if (isParlay && !restrictions.parlayAllowed) {
-    return "尚有欠款，暫時不能投注過關";
-  }
-  if (stake > restrictions.maxSingleStake) {
-    return `尚有欠款，單注上限為 HK$${SEASON2_LOAN.indebtedMaxStake}`;
-  }
   if (stake > currentBalance) {
     return `餘額不足，現時餘額：HK$${roundMoney(currentBalance).toFixed(2)}`;
   }
