@@ -18,8 +18,6 @@ const BET_RPC_ERRORS: Record<string, string> = {
   BETTING_CLOSED: BETTING_CLOSED_MESSAGE,
   BAD_ODDS: "賠率必須大於 1",
   BAD_STAKE: "投注金額必須大於 0",
-  DEBT_STAKE_LIMIT: "欠款期間單注上限為 $100",
-  DEBT_NO_PARLAY: "欠款期間不可投注過關",
   INSUFFICIENT_BALANCE: "餘額不足",
 };
 
