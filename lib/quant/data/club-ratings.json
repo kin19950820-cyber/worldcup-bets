@@ -1,8 +1,8 @@
 {
-  "trainedAt": "2026-11-04T01:30:00.103Z",
+  "trainedAt": "2026-11-05T01:31:46.790Z",
   "source": "https://www.football-data.co.uk",
-  "totalMatches": 15158,
-  "lastMatchDate": "2026-11-02",
+  "totalMatches": 15170,
+  "lastMatchDate": "2026-11-04",
   "teams": {
     "Arsenal": {
       "rating": 1769.9,
@@ -17,20 +17,20 @@
       "matches": 414
     },
     "Birmingham": {
-      "rating": 1506.4,
-      "matches": 695
+      "rating": 1520.4,
+      "matches": 696
     },
     "Blackburn": {
-      "rating": 1444.5,
-      "matches": 687
+      "rating": 1432.2,
+      "matches": 688
     },
     "Blackpool": {
       "rating": 1329.1,
       "matches": 314
     },
     "Bolton": {
-      "rating": 1314.7,
-      "matches": 365
+      "rating": 1328.1,
+      "matches": 366
     },
     "Bournemouth": {
       "rating": 1623,
@@ -45,24 +45,24 @@
       "matches": 627
     },
     "Bristol City": {
-      "rating": 1440.4,
-      "matches": 657
+      "rating": 1429.3,
+      "matches": 658
     },
     "Burnley": {
-      "rating": 1403.8,
-      "matches": 677
+      "rating": 1407.2,
+      "matches": 678
     },
     "Burton": {
       "rating": 1351.7,
       "matches": 92
     },
     "Cardiff": {
-      "rating": 1387.7,
-      "matches": 687
+      "rating": 1390,
+      "matches": 688
     },
     "Charlton": {
-      "rating": 1364,
-      "matches": 289
+      "rating": 1350.7,
+      "matches": 290
     },
     "Chelsea": {
       "rating": 1595.8,
@@ -77,8 +77,8 @@
       "matches": 641
     },
     "Derby": {
-      "rating": 1396,
-      "matches": 657
+      "rating": 1377.2,
+      "matches": 658
     },
     "Doncaster": {
       "rating": 1352.6,
@@ -113,8 +113,8 @@
       "matches": 656
     },
     "Lincoln": {
-      "rating": 1446.8,
-      "matches": 13
+      "rating": 1436.1,
+      "matches": 14
     },
     "Liverpool": {
       "rating": 1647.8,
@@ -133,12 +133,12 @@
       "matches": 617
     },
     "Middlesbrough": {
-      "rating": 1564.7,
-      "matches": 741
+      "rating": 1548.3,
+      "matches": 742
     },
     "Millwall": {
-      "rating": 1505.8,
-      "matches": 657
+      "rating": 1491.8,
+      "matches": 658
     },
     "Milton Keynes Dons": {
       "rating": 1346.2,
@@ -149,8 +149,8 @@
       "matches": 625
     },
     "Norwich": {
-      "rating": 1465.3,
-      "matches": 701
+      "rating": 1484,
+      "matches": 702
     },
     "Nott'm Forest": {
       "rating": 1533.8,
@@ -169,16 +169,16 @@
       "matches": 92
     },
     "Portsmouth": {
-      "rating": 1461.2,
-      "matches": 197
+      "rating": 1475.5,
+      "matches": 198
     },
     "Preston": {
-      "rating": 1330.6,
-      "matches": 565
+      "rating": 1323.3,
+      "matches": 566
     },
     "QPR": {
-      "rating": 1456.2,
-      "matches": 725
+      "rating": 1452.9,
+      "matches": 726
     },
     "Reading": {
       "rating": 1352.3,
@@ -196,53 +196,57 @@
       "rating": 1467.7,
       "matches": 449
     },
+    "Sheffield Utd": {
+      "rating": 1507.2,
+      "matches": 1
+    },
     "Sheffield Weds": {
       "rating": 1232.3,
       "matches": 552
     },
     "Southampton": {
-      "rating": 1591.4,
-      "matches": 607
+      "rating": 1590.5,
+      "matches": 608
     },
     "Stoke": {
-      "rating": 1434.3,
-      "matches": 685
+      "rating": 1446.6,
+      "matches": 686
     },
     "Sunderland": {
       "rating": 1496.3,
       "matches": 497
     },
     "Swansea": {
-      "rating": 1515.7,
-      "matches": 693
+      "rating": 1501.3,
+      "matches": 694
     },
     "Tottenham": {
       "rating": 1531,
       "matches": 617
     },
     "Watford": {
-      "rating": 1353.1,
-      "matches": 701
+      "rating": 1363.7,
+      "matches": 702
     },
     "West Brom": {
-      "rating": 1488.5,
-      "matches": 677
+      "rating": 1489.5,
+      "matches": 678
     },
     "West Ham": {
-      "rating": 1541.8,
-      "matches": 629
+      "rating": 1539.4,
+      "matches": 630
     },
     "Wigan": {
       "rating": 1358.5,
       "matches": 390
     },
     "Wolves": {
-      "rating": 1471.8,
-      "matches": 623
+      "rating": 1482.9,
+      "matches": 624
     },
     "Wrexham": {
-      "rating": 1463.5,
-      "matches": 59
+      "rating": 1479.8,
+      "matches": 60
     },
     "Wycombe": {
       "rating": 1402.5,
