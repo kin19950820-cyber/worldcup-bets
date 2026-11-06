@@ -1,5 +1,5 @@
 {
-  "trainedAt": "2026-11-05T01:31:46.790Z",
+  "trainedAt": "2026-11-06T01:40:08.189Z",
   "source": "https://www.football-data.co.uk",
   "totalMatches": 15170,
   "lastMatchDate": "2026-11-04",
@@ -173,7 +173,7 @@
       "matches": 198
     },
     "Preston": {
-      "rating": 1323.3,
+      "rating": 1322.5,
       "matches": 566
     },
     "QPR": {
@@ -193,12 +193,8 @@
       "matches": 46
     },
     "Sheffield United": {
-      "rating": 1467.7,
-      "matches": 449
-    },
-    "Sheffield Utd": {
-      "rating": 1507.2,
-      "matches": 1
+      "rating": 1475.8,
+      "matches": 450
     },
     "Sheffield Weds": {
       "rating": 1232.3,
