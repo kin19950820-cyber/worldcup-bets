@@ -1,76 +1,76 @@
 {
-  "evaluatedAt": "2026-11-19T02:40:54.452Z",
+  "evaluatedAt": "2026-11-20T02:25:41.212Z",
   "evalStart": "2018-01-01",
   "matches": 8809,
   "brier": {
-    "model": 0.5117392964843019,
-    "baseline": 0.6333307008470235
+    "model": 0.5117364408904834,
+    "baseline": 0.6333295338476935
   },
   "logLoss": {
-    "model": 0.8707871603006746,
-    "baseline": 1.0503071564758861
+    "model": 0.8707709205032851,
+    "baseline": 1.0503066749374255
   },
   "accuracy": 0.6039278011124986,
   "calibration": [
     {
       "bucket": "0-10%",
-      "meanPredicted": 0.05066725783390931,
-      "actualRate": 0.05194805194805195,
-      "count": 539
+      "meanPredicted": 0.050780120417252876,
+      "actualRate": 0.05223880597014925,
+      "count": 536
     },
     {
       "bucket": "10-20%",
-      "meanPredicted": 0.15122549388398157,
-      "actualRate": 0.12432432432432433,
-      "count": 740
+      "meanPredicted": 0.15120087344705768,
+      "actualRate": 0.12330623306233063,
+      "count": 738
     },
     {
       "bucket": "20-30%",
-      "meanPredicted": 0.2519653785691551,
-      "actualRate": 0.2259953161592506,
-      "count": 854
+      "meanPredicted": 0.2518702477711979,
+      "actualRate": 0.2266355140186916,
+      "count": 856
     },
     {
       "bucket": "30-40%",
-      "meanPredicted": 0.34988652237223067,
-      "actualRate": 0.3159420289855073,
-      "count": 1035
+      "meanPredicted": 0.34994150972900107,
+      "actualRate": 0.3156881616939365,
+      "count": 1039
     },
     {
       "bucket": "40-50%",
-      "meanPredicted": 0.45129975925399735,
-      "actualRate": 0.42087254063301965,
-      "count": 1169
+      "meanPredicted": 0.45145045469507344,
+      "actualRate": 0.42078364565587734,
+      "count": 1174
     },
     {
       "bucket": "50-60%",
-      "meanPredicted": 0.5496521605927451,
-      "actualRate": 0.5261324041811847,
-      "count": 1148
+      "meanPredicted": 0.5497188157267582,
+      "actualRate": 0.5257192676547515,
+      "count": 1147
     },
     {
       "bucket": "60-70%",
-      "meanPredicted": 0.6480598378380081,
-      "actualRate": 0.6143790849673203,
-      "count": 1071
+      "meanPredicted": 0.6480657988131013,
+      "actualRate": 0.6169617893755824,
+      "count": 1073
     },
     {
       "bucket": "70-80%",
-      "meanPredicted": 0.7493832464965497,
-      "actualRate": 0.7321428571428571,
-      "count": 952
+      "meanPredicted": 0.7493116144460692,
+      "actualRate": 0.7326315789473684,
+      "count": 950
     },
     {
       "bucket": "80-90%",
-      "meanPredicted": 0.8480248929899441,
+      "meanPredicted": 0.8479525905002734,
       "actualRate": 0.8326745718050066,
       "count": 759
     },
     {
       "bucket": "90-100%",
-      "meanPredicted": 0.9468899660400865,
-      "actualRate": 0.9095940959409594,
-      "count": 542
+      "meanPredicted": 0.9468682788915478,
+      "actualRate": 0.9087523277467412,
+      "count": 537
     }
   ]
 }
